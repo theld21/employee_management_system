@@ -128,9 +128,9 @@ const Calendar: React.FC = () => {
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           headerToolbar={{
-            left: "prev,next addEventButton",
+            left: "",
             center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
+            right: "prev,next",
           }}
           events={events}
           selectable={true}
