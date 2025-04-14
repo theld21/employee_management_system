@@ -1,154 +1,157 @@
 "use client";
-import Checkbox from "@/components/form/input/Checkbox";
-import Input from "@/components/form/input/InputField";
-import Label from "@/components/form/Label";
-import Button from "@/components/ui/button/Button";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
-import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
-export default function SignInForm() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+const SignInForm = () => {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+  const { login, error, loading } = useAuth();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await login(formData.username, formData.password);
+  };
+
   return (
-    <div className="flex flex-col flex-1 lg:w-1/2 w-full">
-      <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
-          <ChevronLeftIcon />
-          Back to dashboard
-        </Link>
-      </div>
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Sign In
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign in!
-            </p>
-          </div>
-          <div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M18.7511 10.1944C18.7511 9.47495 18.6915 8.94995 18.5626 8.40552H10.1797V11.6527H15.1003C15.0011 12.4597 14.4654 13.675 13.2749 14.4916L13.2582 14.6003L15.9087 16.6126L16.0924 16.6305C17.7788 15.1041 18.7511 12.8583 18.7511 10.1944Z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M10.1788 18.75C12.5895 18.75 14.6133 17.9722 16.0915 16.6305L13.274 14.4916C12.5201 15.0068 11.5081 15.3666 10.1788 15.3666C7.81773 15.3666 5.81379 13.8402 5.09944 11.7305L4.99473 11.7392L2.23868 13.8295L2.20264 13.9277C3.67087 16.786 6.68674 18.75 10.1788 18.75Z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.10014 11.7305C4.91165 11.186 4.80257 10.6027 4.80257 9.99992C4.80257 9.3971 4.91165 8.81379 5.09022 8.26935L5.08523 8.1534L2.29464 6.02954L2.20333 6.0721C1.5982 7.25823 1.25098 8.5902 1.25098 9.99992C1.25098 11.4096 1.5982 12.7415 2.20333 13.9277L5.10014 11.7305Z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M10.1789 4.63331C11.8554 4.63331 12.9864 5.34303 13.6312 5.93612L16.1511 3.525C14.6035 2.11528 12.5895 1.25 10.1789 1.25C6.68676 1.25 3.67088 3.21387 2.20264 6.07218L5.08953 8.26943C5.81381 6.15972 7.81776 4.63331 10.1789 4.63331Z"
-                    fill="#EB4335"
-                  />
-                </svg>
-                Sign in with Google
-              </button>
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
-                <svg
-                  width="21"
-                  className="fill-current"
-                  height="20"
-                  viewBox="0 0 21 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
-                </svg>
-                Sign in with X
-              </button>
-            </div>
-            <div className="relative py-3 sm:py-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-                  Or
-                </span>
-              </div>
-            </div>
-            <form>
-              <div className="space-y-6">
-                <div>
-                  <Label>
-                    Email <span className="text-error-500">*</span>{" "}
-                  </Label>
-                  <Input placeholder="info@gmail.com" type="email" />
-                </div>
-                <div>
-                  <Label>
-                    Password <span className="text-error-500">*</span>{" "}
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Keep me logged in
-                    </span>
-                  </div>
-                  <Link
-                    href="/reset-password"
-                    className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
-                  </Button>
-                </div>
-              </div>
-            </form>
+    <div className="rounded-xl border border-stroke bg-white p-8 shadow-default dark:border-gray-800 dark:bg-gray-900/50 sm:px-11 sm:py-11">
+      <h2 className="mb-2 text-2xl font-semibold text-gray-900 dark:text-white">
+        Sign In
+      </h2>
+      <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">
+        Sign in to your account to start using the app
+      </p>
 
-            <div className="mt-5">
-              <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Don&apos;t have an account? {""}
-                <Link
-                  href="/signup"
-                  className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                >
-                  Sign Up
-                </Link>
-              </p>
-            </div>
+      {error && (
+        <div className="mb-5 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6">
+          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Username
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              placeholder="Enter your username"
+              className="w-full rounded-lg border border-gray-300 bg-transparent py-3 pl-4 pr-10 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            />
+            <span className="absolute right-4 top-3 text-gray-500 dark:text-gray-400">
+              <svg
+                className="fill-current"
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9.00002 9C11.0842 9 12.7725 7.3115 12.7725 5.2275C12.7725 3.1435 11.0842 1.455 9.00002 1.455C6.91602 1.455 5.22752 3.1435 5.22752 5.2275C5.22752 7.3115 6.91602 9 9.00002 9Z"
+                  fill=""
+                />
+                <path
+                  d="M10.5576 10.5488H7.44263C4.13263 10.5488 1.45312 13.2283 1.45312 16.5383C1.45312 16.7963 1.66362 17.0068 1.92163 17.0068H16.0786C16.3366 17.0068 16.5471 16.7963 16.5471 16.5383C16.5471 13.2283 13.8676 10.5488 10.5576 10.5488Z"
+                  fill=""
+                />
+              </svg>
+            </span>
           </div>
         </div>
-      </div>
+
+        <div className="mb-4">
+          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="Enter your password"
+              className="w-full rounded-lg border border-gray-300 bg-transparent py-3 pl-4 pr-10 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            />
+            <span className="absolute right-4 top-3 text-gray-500 dark:text-gray-400">
+              <svg
+                className="fill-current"
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9 5.32275C7.0325 5.32275 5.46 6.89525 5.46 8.86275C5.46 9.67275 5.7325 10.4028 6.1875 10.9903L6.3825 11.2153H11.6175L11.8125 10.9903C12.2675 10.4403 12.54 9.67275 12.54 8.86275C12.54 6.8953 10.9675 5.32275 9 5.32275ZM9 10.3053C7.695 10.3053 6.6 9.21025 6.6 7.90525C6.6 6.60025 7.695 5.50525 9 5.50525C10.305 5.50525 11.4 6.60025 11.4 7.90525C11.4 9.21025 10.305 10.3053 9 10.3053Z"
+                  fill=""
+                />
+                <path
+                  d="M9 0.226562C4.0875 0.226562 0.1125 4.20156 0.1125 9.11406C0.1125 14.0266 4.0875 18.0016 9 18.0016C13.9125 18.0016 17.8875 14.0266 17.8875 9.11406C17.8875 4.20156 13.9125 0.226562 9 0.226562ZM9 16.4266C4.935 16.4266 1.725 13.1791 1.725 9.11406C1.725 5.04906 4.935 1.80156 9 1.80156C13.065 1.80156 16.275 5.04906 16.275 9.11406C16.275 13.1791 13.065 16.4266 9 16.4266Z"
+                  fill=""
+                />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              className="h-4 w-4 border-gray-300 bg-gray-100 text-primary focus:ring-2 focus:ring-primary"
+            />
+            <label
+              htmlFor="rememberMe"
+              className="ml-2 text-sm font-medium text-gray-600 dark:text-gray-400"
+            >
+              Remember me
+            </label>
+          </div>
+          <Link
+            href="#"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Forgot Password?
+          </Link>
+        </div>
+
+        <div className="mb-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-lg bg-primary py-3 px-9 text-center font-medium text-white hover:bg-primary/90 disabled:bg-primary/70"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </div>
+      </form>
+
+      <p className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">
+        Don&apos;t have an account?{' '}
+        <Link
+          href="/auth/signup"
+          className="text-primary hover:underline"
+        >
+          Sign Up
+        </Link>
+      </p>
     </div>
   );
-}
+};
+
+export default SignInForm;

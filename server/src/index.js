@@ -13,6 +13,14 @@ const groupRoutes = require("./routes/groupRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Thiết lập múi giờ Việt Nam (UTC+7)
+process.env.TZ = "Asia/Ho_Chi_Minh";
+console.log(
+  `Timezone set to: ${
+    process.env.TZ
+  }, Current time: ${new Date().toISOString()}`
+);
+
 // Connect to MongoDB
 connectDB()
   .then(() => {

@@ -14,20 +14,11 @@ const AttendanceSchema = new mongoose.Schema(
     checkIn: {
       time: {
         type: Date,
-        required: true,
-      },
-      note: {
-        type: String,
-        trim: true,
       },
     },
     checkOut: {
       time: {
         type: Date,
-      },
-      note: {
-        type: String,
-        trim: true,
       },
     },
     totalHours: {
@@ -48,18 +39,32 @@ const AttendanceSchema = new mongoose.Schema(
 // Create a compound index for user and date to ensure uniqueness
 AttendanceSchema.index({ user: 1, date: 1 }, { unique: true });
 
-// Calculate total hours when checking out
+// Calculate total hours and status when saving
 AttendanceSchema.pre("save", function (next) {
-  if (
-    this.checkIn &&
-    this.checkIn.time &&
-    this.checkOut &&
-    this.checkOut.time
-  ) {
+  // Calculate total hours if both check-in and check-out exist
+  if (this.checkIn?.time && this.checkOut?.time) {
     const checkInTime = new Date(this.checkIn.time).getTime();
     const checkOutTime = new Date(this.checkOut.time).getTime();
     this.totalHours = (checkOutTime - checkInTime) / (1000 * 60 * 60); // Convert milliseconds to hours
   }
+
+  // Update status based on check-in time, check-out time and total hours
+  if (!this.checkIn?.time && !this.checkOut?.time) {
+    this.status = "absent";
+  } else if (this.checkIn?.time) {
+    const checkInDate = new Date(this.checkIn.time);
+    const checkInLimit = new Date(checkInDate);
+    checkInLimit.setHours(8, 30, 0, 0);
+
+    if (checkInDate > checkInLimit) {
+      this.status = "late";
+    } else if (this.totalHours && this.totalHours < 4) {
+      this.status = "half-day";
+    } else {
+      this.status = "present";
+    }
+  }
+
   next();
 });
 

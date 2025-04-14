@@ -1,6 +1,20 @@
 const { validationResult } = require("express-validator");
-const moment = require("moment");
 const Attendance = require("../models/Attendance");
+
+/**
+ * Hàm hỗ trợ để lấy ngày bắt đầu và kết thúc của một ngày
+ * @param {Date} date - Ngày cần xử lý
+ * @returns {Object} - Đối tượng chứa startOfDay và endOfDay
+ */
+const getDayBoundaries = (date = new Date()) => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return { startOfDay, endOfDay };
+};
 
 // Check in
 exports.checkIn = async (req, res) => {
@@ -10,17 +24,16 @@ exports.checkIn = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { note } = req.body;
     const userId = req.user.id;
     const now = new Date();
-    const today = moment(now).startOf("day").toDate();
+    const { startOfDay, endOfDay } = getDayBoundaries(now);
 
     // Check if user already checked in today
     let attendance = await Attendance.findOne({
       user: userId,
       date: {
-        $gte: today,
-        $lt: moment(today).add(1, "days").toDate(),
+        $gte: startOfDay,
+        $lte: endOfDay,
       },
     });
 
@@ -34,16 +47,14 @@ exports.checkIn = async (req, res) => {
     if (!attendance) {
       attendance = new Attendance({
         user: userId,
-        date: today,
+        date: startOfDay, // Sử dụng ngày đầu để đảm bảo nhất quán
         checkIn: {
           time: now,
-          note: note || "",
         },
       });
     } else {
       attendance.checkIn = {
         time: now,
-        note: note || "",
       };
     }
 
@@ -64,17 +75,16 @@ exports.checkOut = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { note } = req.body;
     const userId = req.user.id;
     const now = new Date();
-    const today = moment(now).startOf("day").toDate();
+    const { startOfDay, endOfDay } = getDayBoundaries(now);
 
     // Check if user has checked in today
     const attendance = await Attendance.findOne({
       user: userId,
       date: {
-        $gte: today,
-        $lt: moment(today).add(1, "days").toDate(),
+        $gte: startOfDay,
+        $lte: endOfDay,
       },
     });
 
@@ -91,7 +101,6 @@ exports.checkOut = async (req, res) => {
     // Update checkout time
     attendance.checkOut = {
       time: now,
-      note: note || "",
     };
 
     await attendance.save();
@@ -112,10 +121,17 @@ exports.getUserAttendance = async (req, res) => {
     let query = { user: userId };
 
     if (startDate && endDate) {
+      const { startOfDay: start } = getDayBoundaries(new Date(startDate));
+      const { endOfDay: end } = getDayBoundaries(new Date(endDate));
+
       query.date = {
-        $gte: moment(startDate).startOf("day").toDate(),
-        $lte: moment(endDate).endOf("day").toDate(),
+        $gte: start,
+        $lte: end,
       };
+
+      console.log(
+        `Query attendance between: ${start.toISOString()} and ${end.toISOString()}`
+      );
     }
 
     const attendance = await Attendance.find(query).sort({ date: -1 });
@@ -131,13 +147,17 @@ exports.getUserAttendance = async (req, res) => {
 exports.getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user.id;
-    const today = moment().startOf("day").toDate();
+    const { startOfDay, endOfDay } = getDayBoundaries();
+
+    console.log(
+      `Looking for attendance between: ${startOfDay.toISOString()} and ${endOfDay.toISOString()}`
+    );
 
     const attendance = await Attendance.findOne({
       user: userId,
       date: {
-        $gte: today,
-        $lt: moment(today).add(1, "days").toDate(),
+        $gte: startOfDay,
+        $lte: endOfDay,
       },
     });
 
@@ -163,9 +183,12 @@ exports.getTeamAttendance = async (req, res) => {
     let query = {};
 
     if (startDate && endDate) {
+      const { startOfDay: start } = getDayBoundaries(new Date(startDate));
+      const { endOfDay: end } = getDayBoundaries(new Date(endDate));
+
       query.date = {
-        $gte: moment(startDate).startOf("day").toDate(),
-        $lte: moment(endDate).endOf("day").toDate(),
+        $gte: start,
+        $lte: end,
       };
     }
 
@@ -190,4 +213,28 @@ exports.getTeamAttendance = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// Helper function to get status color
+const getStatusColor = (status) => {
+  switch (status) {
+    case "present":
+      return "#4CAF50"; // Green
+    case "late":
+      return "#FFC107"; // Yellow
+    case "absent":
+      return "#F44336"; // Red
+    case "half-day":
+      return "#FF9800"; // Orange
+    default:
+      return "#9E9E9E"; // Grey
+  }
+};
+
+module.exports = {
+  checkIn: exports.checkIn,
+  checkOut: exports.checkOut,
+  getUserAttendance: exports.getUserAttendance,
+  getTodayAttendance: exports.getTodayAttendance,
+  getTeamAttendance: exports.getTeamAttendance,
 };
