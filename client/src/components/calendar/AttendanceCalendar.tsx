@@ -6,19 +6,6 @@ import { DatesSetArg, EventInput, EventContentArg } from '@fullcalendar/core';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 
-interface AttendanceEvent {
-  title: string;
-  date: string;
-  color: string;
-  id: string;
-  extendedProps: {
-    checkIn?: string;
-    checkOut?: string;
-    totalHours?: number;
-    status: string;
-  };
-}
-
 interface Attendance {
   _id: string;
   createdAt: string;
@@ -44,11 +31,20 @@ interface TodayAttendance {
   status: string;
 }
 
+interface CalendarAttendanceData {
+  id: string;
+  date: string;
+  color: string;
+  title?: string;
+  extendedProps: {
+    time?: string;
+  };
+}
+
 const AttendanceCalendar = () => {
   const { token } = useAuth();
-  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [events, setEvents] = useState<CalendarAttendanceData[]>([]);
   const calendarRef = useRef<FullCalendar | null>(null);
-  const initialDataLoadedRef = useRef(false);
   const fetchingRef = useRef(false);
   
   // Today's attendance state
@@ -64,6 +60,14 @@ const AttendanceCalendar = () => {
     if (!timeString) return 'N/A';
     const date = new Date(timeString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  // Function to format a date to YYYY-MM-DD string
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
   
   // Function to fetch today's attendance
@@ -117,12 +121,16 @@ const AttendanceCalendar = () => {
         return checkInTime > nineAM;
       };
 
-      const attendanceData: any[] = [];
+      const attendanceData: CalendarAttendanceData[] = [];
 
       // Format the data for FullCalendar
       response.data.forEach((attendance: Attendance) => {
         const date = new Date(attendance.createdAt);
-        const formattedDate = date.toISOString().split('T')[0];
+        const formattedDate = formatDate(date);
+        
+        // Check if date is today
+        const today = formatDate(new Date());
+        const isToday = formattedDate === today;
         
         const checkInColor = attendance.checkIn?.time
           ? (isLateCheckIn(attendance.checkIn.time) ? '#F44336' : '#4CAF50')
@@ -137,18 +145,20 @@ const AttendanceCalendar = () => {
           }
         });
         
-        attendanceData.push({
-          id: attendance._id + "_out",
-          date: formattedDate,
-          color: attendance.checkOut?.time ? '#4CAF50' : '#F44336',
-          extendedProps: {
-            time: attendance.checkOut?.time,
-          }
-        });
+        // Only push checkout event if it has checkout time or if it's not today
+        if (attendance.checkOut?.time || !isToday) {
+          attendanceData.push({
+            id: attendance._id + "_out",
+            date: formattedDate,
+            color: attendance.checkOut?.time ? '#4CAF50' : '#F44336',
+            extendedProps: {
+              time: attendance.checkOut?.time,
+            }
+          });
+        }
       });
       
       setEvents(attendanceData);
-      initialDataLoadedRef.current = true;
     } catch (error) {
       console.error('Error fetching attendance data:', error);
     } finally {
@@ -232,82 +242,65 @@ const AttendanceCalendar = () => {
   const hasCheckedOut = todayAttendance && todayAttendance.checkOut && todayAttendance.checkOut.time;
 
   return (
-    <div className="space-y-6">
-      {/* Check-in/Check-out Card */}
+    <div className="space-y-6">      
+      {/* Calendar with attendance actions */}
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
-        <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">Today's Attendance</h3>
-        
-        {loading ? (
-          <div className="flex h-40 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          </div>
-        ) : error ? (
-          <div className="mb-5 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-            {error}
-          </div>
-        ) : (
-          <div>
-            <div className="mb-6 grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-                <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">Check-in Time</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-white">
-                  {hasCheckedIn ? formatTime(todayAttendance?.checkIn?.time) : "Not checked in"}
-                </p>
-              </div>
-              <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-                <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">Check-out Time</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-white">
-                  {hasCheckedOut ? formatTime(todayAttendance?.checkOut?.time) : "Not checked out"}
-                </p>
-              </div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Attendance Calendar</h3>
+          
+          {loading ? (
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          ) : error ? (
+            <div className="text-sm text-red-500 dark:text-red-400">
+              {error}
             </div>
-            
-            {Boolean(hasCheckedIn && hasCheckedOut) ? (
-              <div className="mb-4 rounded-lg bg-green-100 p-4 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                <p className="font-medium">Attendance complete for today!</p>
-                <p className="text-sm">Total hours: {todayAttendance?.totalHours?.toFixed(2) || "Calculating..."}</p>
-              </div>
-            ) : (
-              <>              
-                {actionError && (
-                  <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                    {actionError}
-                  </div>
-                )}
-                
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleCheckIn}
-                    disabled={Boolean(checkInLoading || hasCheckedIn)}
-                    className={`flex-1 rounded-lg py-3 px-6 text-center font-medium text-white disabled:opacity-70 ${
-                      hasCheckedIn 
-                        ? "bg-gray-500 cursor-not-allowed" 
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
-                  >
-                    {checkInLoading ? "Checking in..." : hasCheckedIn ? "Checked In" : "Check In"}
-                  </button>
-                  
-                  <button
-                    onClick={handleCheckOut}
-                    disabled={Boolean(checkOutLoading || !hasCheckedIn || hasCheckedOut)}
-                    className={`flex-1 rounded-lg py-3 px-6 text-center font-medium text-white disabled:opacity-70 ${
-                      !hasCheckedIn || hasCheckedOut
-                        ? "bg-gray-500 cursor-not-allowed"
-                        : "bg-red-600 hover:bg-red-700"
-                    }`}
-                  >
-                    {checkOutLoading ? "Checking out..." : hasCheckedOut ? "Checked Out" : "Check Out"}
-                  </button>
+          ) : (
+            <div className="flex items-center gap-4">
+              {hasCheckedIn && (
+                <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Check-in: {formatTime(todayAttendance?.checkIn?.time)}
+                  </span>
                 </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Calendar */}
-      <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
+              )}
+              
+              {hasCheckedOut && (
+                <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Check-out: {formatTime(todayAttendance?.checkOut?.time)}
+                  </span>
+                </div>
+              )}
+              
+              {!hasCheckedIn && (
+                <button
+                  onClick={handleCheckIn}
+                  disabled={checkInLoading}
+                  className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white"
+                >
+                  {checkInLoading ? "Checking in..." : "Check In"}
+                </button>
+              )}
+              
+              {hasCheckedIn && !hasCheckedOut && (
+                <button
+                  onClick={handleCheckOut}
+                  disabled={checkOutLoading}
+                  className="rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
+                >
+                  {checkOutLoading ? "Checking out..." : "Check Out"}
+                </button>
+              )}
+              
+              {actionError && (
+                <div className="text-sm text-red-500 dark:text-red-400">
+                  {actionError}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
         <div className="attendance-calendar">
           <FullCalendar
             ref={calendarRef}
@@ -315,9 +308,9 @@ const AttendanceCalendar = () => {
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
-              right: 'dayGridMonth'
+              right: ''
             }}
-            events={events as EventInput[]}
+            events={events as unknown as EventInput[]}
             datesSet={handleDatesSet}
             height="auto"
             eventContent={renderEventContent}
