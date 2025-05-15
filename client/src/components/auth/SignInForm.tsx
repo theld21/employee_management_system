@@ -21,12 +21,12 @@ const SignInForm = () => {
   };
 
   return (
-    <div className="rounded-xl border border-stroke bg-white p-8 shadow-default dark:border-gray-800 dark:bg-gray-900/50 sm:px-11 sm:py-11">
-      <h2 className="mb-2 text-2xl font-semibold text-gray-900 dark:text-white">
+    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-900/80 sm:px-11 sm:py-11 w-full max-w-md">
+      <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
         Sign In
       </h2>
-      <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">
-        Sign in to your account to start using the app
+      <p className="mb-8 text-sm text-gray-600 dark:text-gray-400">
+        Sign in to your account to access your workspace
       </p>
 
       {error && (
@@ -48,9 +48,9 @@ const SignInForm = () => {
               onChange={handleChange}
               required
               placeholder="Enter your username"
-              className="w-full rounded-lg border border-gray-300 bg-transparent py-3 pl-4 pr-10 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+              className="w-full rounded-lg border border-gray-300 bg-transparent py-3.5 pl-4 pr-10 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/20"
             />
-            <span className="absolute right-4 top-3 text-gray-500 dark:text-gray-400">
+            <span className="absolute right-4 top-3.5 text-gray-500 dark:text-gray-400">
               <svg
                 className="fill-current"
                 width="18"
@@ -72,7 +72,7 @@ const SignInForm = () => {
           </div>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-6">
           <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Password
           </label>
@@ -84,9 +84,9 @@ const SignInForm = () => {
               onChange={handleChange}
               required
               placeholder="Enter your password"
-              className="w-full rounded-lg border border-gray-300 bg-transparent py-3 pl-4 pr-10 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+              className="w-full rounded-lg border border-gray-300 bg-transparent py-3.5 pl-4 pr-10 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/20"
             />
-            <span className="absolute right-4 top-3 text-gray-500 dark:text-gray-400">
+            <span className="absolute right-4 top-3.5 text-gray-500 dark:text-gray-400">
               <svg
                 className="fill-current"
                 width="18"
@@ -108,48 +108,16 @@ const SignInForm = () => {
           </div>
         </div>
 
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              className="h-4 w-4 border-gray-300 bg-gray-100 text-primary focus:ring-2 focus:ring-primary"
-            />
-            <label
-              htmlFor="rememberMe"
-              className="ml-2 text-sm font-medium text-gray-600 dark:text-gray-400"
-            >
-              Remember me
-            </label>
-          </div>
-          <Link
-            href="#"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Forgot Password?
-          </Link>
-        </div>
-
         <div className="mb-6">
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-primary py-3 px-9 text-center font-medium text-white hover:bg-primary/90 disabled:bg-primary/70"
+            className="flex w-full items-center justify-center rounded-lg bg-blue-600 py-3.5 px-9 text-center font-medium text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 dark:bg-blue-500 dark:shadow-blue-800/30 dark:hover:bg-blue-600 transition-all duration-200 disabled:opacity-70"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </div>
       </form>
-
-      <p className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">
-        Don&apos;t have an account?{' '}
-        <Link
-          href="/auth/signup"
-          className="text-primary hover:underline"
-        >
-          Sign Up
-        </Link>
-      </p>
     </div>
   );
 };

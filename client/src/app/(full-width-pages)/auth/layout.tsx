@@ -12,31 +12,22 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
+    <div className="relative p-0 bg-white dark:bg-gray-900 min-h-screen w-full">
       <ThemeProvider>
-        <div className="relative flex lg:flex-row w-full h-screen justify-center flex-col  dark:bg-gray-900 sm:p-0">
-          {children}
-          <div className="lg:w-1/2 w-full h-full bg-brand-950 dark:bg-white/5 lg:grid items-center hidden">
-            <div className="relative items-center justify-center  flex z-1">
+        <div className="relative flex min-h-screen items-center w-full justify-center flex-col lg:flex-row dark:bg-gray-900">
+          <div className="flex items-center justify-center lg:w-1/2 w-full py-10 lg:py-0 px-4">
+            {children}
+          </div>
+          <div className="lg:w-1/2 w-full min-h-screen bg-gradient-to-b from-blue-600 to-indigo-800 dark:from-blue-900 dark:to-indigo-950 lg:flex items-center hidden">
+            <div className="relative items-center justify-center flex z-1 px-10">
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
-              <div className="flex flex-col items-center max-w-xs">
-                <Link href="/" className="block mb-4">
-                  <Image
-                    width={231}
-                    height={48}
-                    src="./images/logo/auth-logo.svg"
-                    alt="Logo"
-                  />
-                </Link>
-                <p className="text-center text-gray-400 dark:text-white/60">
-                  Free and Open-Source Tailwind CSS Admin Dashboard Template
-                </p>
-              </div>
             </div>
           </div>
-          <div className="fixed bottom-6 right-6 z-50 hidden sm:block">
-            <ThemeTogglerTwo />
+          <div className="fixed bottom-6 right-6 z-50 sm:block">
+            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-full p-2">
+              <ThemeTogglerTwo />
+            </div>
           </div>
         </div>
       </ThemeProvider>
