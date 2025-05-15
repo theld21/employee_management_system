@@ -21,14 +21,13 @@ interface AttendanceEvent {
 
 interface Attendance {
   _id: string;
-  date: string;
+  createdAt: string;
   checkIn?: {
     time: string;
   };
   checkOut?: {
     time: string;
   };
-  totalHours?: number;
   status: string;
 }
 
@@ -68,34 +67,45 @@ const AttendanceCalendar = () => {
         throw new Error('Failed to fetch attendance data');
       }
 
+      const isLateCheckIn = (timeString?: string): boolean => {
+        if (!timeString) return false;
+        const checkInTime = new Date(timeString);
+        const nineAM = new Date(checkInTime);
+        nineAM.setHours(9, 0, 0, 0);
+        return checkInTime > nineAM;
+      };
+
+      const attendanceData: any[] = [];
+
       // Format the data for FullCalendar
-      const formattedEvents = response.data.map((attendance: Attendance) => {
-        const date = new Date(attendance.date);
+      response.data.forEach((attendance: Attendance) => {
+        const date = new Date(attendance.createdAt);
         const formattedDate = date.toISOString().split('T')[0];
         
-        // Set color based on status
-        let color = '#4CAF50'; // Default green for present
-        if (attendance.status === 'absent') {
-          color = '#F44336'; // Red for absent
-        } else if (attendance.status === 'late') {
-          color = '#FF9800'; // Orange for late
-        }
+        const checkInColor = attendance.checkIn?.time
+          ? (isLateCheckIn(attendance.checkIn.time) ? '#F44336' : '#4CAF50')
+          : '#9E9E9E';
         
-        return {
-          id: attendance._id,
-          title: attendance.status,
+        attendanceData.push({
+          id: attendance._id + "_in",
           date: formattedDate,
-          color: color,
+          color: checkInColor,
           extendedProps: {
-            checkIn: attendance.checkIn?.time,
-            checkOut: attendance.checkOut?.time,
-            totalHours: attendance.totalHours,
-            status: attendance.status
+            time: attendance.checkIn?.time,
           }
-        };
+        });
+        
+        attendanceData.push({
+          id: attendance._id + "_out",
+          date: formattedDate,
+          color: attendance.checkOut?.time ? '#4CAF50' : '#F44336',
+          extendedProps: {
+            time: attendance.checkOut?.time,
+          }
+        });
       });
       
-      setEvents(formattedEvents);
+      setEvents(attendanceData);
       initialDataLoadedRef.current = true;
     } catch (error) {
       console.error('Error fetching attendance data:', error);
@@ -113,15 +123,12 @@ const AttendanceCalendar = () => {
   // Custom render for events
   const renderEventContent = (eventInfo: EventContentArg) => {
     const { extendedProps } = eventInfo.event;
-    const checkIn = extendedProps.checkIn ? formatTime(extendedProps.checkIn) : 'K';
-    const checkOut = extendedProps.checkOut ? formatTime(extendedProps.checkOut) : 'K';
-    const hours = extendedProps.totalHours ? `${extendedProps.totalHours.toFixed(1)}h` : 'K';
+    const time = extendedProps.time ? formatTime(extendedProps.time) : 'K';
     
     return (
-      <div className="text-xs p-1">
-        <div>{checkIn} - {checkOut}</div>
-        {extendedProps.totalHours && <div>{hours}</div>}
-      </div>
+      <span className="text-xs p-1">
+        {time}
+      </span>
     );
   };
 
