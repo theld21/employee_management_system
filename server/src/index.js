@@ -6,7 +6,7 @@ const connectDB = require("./config/db");
 const setupAdmin = require("./utils/setupAdmin");
 const authRoutes = require("./routes/authRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
-const attendanceRequestRoutes = require("./routes/attendanceRequestRoutes");
+const requestRoutes = require("./routes/requestRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 
 // Initialize app
@@ -35,10 +35,34 @@ connectDB()
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log("Request body:", req.body);
+
+  // Store original send method
+  const originalSend = res.send;
+
+  // Override send method to log response
+  res.send = function (body) {
+    console.log(
+      `[${new Date().toISOString()}] Response to ${req.method} ${req.url}:`,
+      typeof body === "string"
+        ? body.substring(0, 200)
+        : "[Non-string response]"
+    );
+
+    // Call original send method
+    return originalSend.apply(res, arguments);
+  };
+
+  next();
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
-app.use("/api/requests", attendanceRequestRoutes);
+app.use("/api/requests", requestRoutes);
 app.use("/api/groups", groupRoutes);
 
 // Health check endpoint
@@ -57,6 +81,9 @@ app.use((err, req, res, next) => {
 
 // Not found middleware
 app.use((req, res) => {
+  console.log(
+    `[${new Date().toISOString()}] 404 Not Found: ${req.method} ${req.url}`
+  );
   res.status(404).json({ message: "Route not found" });
 });
 

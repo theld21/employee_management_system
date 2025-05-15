@@ -17,7 +17,7 @@ const RequestsPage = () => {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Attendance Correction Requests" />
+      <PageBreadcrumb pageTitle="Requests Management" />
       <RequestList />
     </div>
   );

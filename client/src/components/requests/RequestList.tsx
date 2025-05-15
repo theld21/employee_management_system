@@ -5,37 +5,24 @@ import api from '@/utils/api';
 import { useModal } from '@/hooks/useModal';
 import RequestModal from './RequestModal';
 
-interface AttendanceRequest {
+interface Request {
   _id: string;
-  requestType: 'check-in' | 'check-out' | 'both';
-  currentCheckIn?: string;
-  currentCheckOut?: string;
-  requestedCheckIn?: string;
-  requestedCheckOut?: string;
+  type: string;
+  startTime: string;
+  endTime: string;
   reason: string;
-  status: 'pending' | 'approved-level2' | 'approved' | 'rejected-level2' | 'rejected-level1';
+  status: string;
   createdAt: string;
-  approvalLevel2?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    comment?: string;
-  };
-  approvalLevel1?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    comment?: string;
+  user?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
   };
 }
 
 const RequestList: React.FC = () => {
   const { token } = useAuth();
-  const [requests, setRequests] = useState<AttendanceRequest[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
@@ -63,30 +50,46 @@ const RequestList: React.FC = () => {
     openModal();
   };
 
+  const handleRequestSubmitted = () => {
+    fetchRequests();
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
 
-  const formatTime = (dateString: string | undefined) => {
+  const formatDateTime = (dateString: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'approved-level2':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case 'approved':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'rejected-level2':
-      case 'rejected-level1':
+      case 'rejected':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  };
+
+  const formatRequestType = (type: string) => {
+    switch (type) {
+      case 'work-time':
+        return 'Work Time Update';
+      case 'leave-request':
+        return 'Leave Request';
+      case 'wfh-request':
+        return 'Work From Home';
+      case 'overtime':
+        return 'Overtime';
+      default:
+        return type;
     }
   };
 
@@ -94,14 +97,10 @@ const RequestList: React.FC = () => {
     switch (status) {
       case 'pending':
         return 'Pending';
-      case 'approved-level2':
-        return 'Approved by L2 Manager';
       case 'approved':
         return 'Approved';
-      case 'rejected-level2':
-        return 'Rejected by L2 Manager';
-      case 'rejected-level1':
-        return 'Rejected by L1 Manager';
+      case 'rejected':
+        return 'Rejected';
       default:
         return status;
     }
@@ -129,7 +128,7 @@ const RequestList: React.FC = () => {
         </div>
       ) : requests.length === 0 ? (
         <div className="rounded-lg bg-gray-100 px-4 py-8 text-center text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-          You don&apos;t have any attendance correction requests.
+          You don&apos;t have any requests.
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -138,7 +137,7 @@ const RequestList: React.FC = () => {
               <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Requested Times</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
               </tr>
             </thead>
@@ -152,24 +151,15 @@ const RequestList: React.FC = () => {
                     {formatDate(request.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    {request.requestType === 'check-in' 
-                      ? 'Check-in' 
-                      : request.requestType === 'check-out' 
-                      ? 'Check-out' 
-                      : 'Check-in & Check-out'}
+                    {formatRequestType(request.type)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    {request.requestType === 'check-in' || request.requestType === 'both' ? (
-                      <div>
-                        <span className="font-medium">In:</span> {formatTime(request.requestedCheckIn)}
-                      </div>
-                    ) : null}
-                    
-                    {request.requestType === 'check-out' || request.requestType === 'both' ? (
-                      <div>
-                        <span className="font-medium">Out:</span> {formatTime(request.requestedCheckOut)}
-                      </div>
-                    ) : null}
+                    <div>
+                      <span className="font-medium">From:</span> {formatDateTime(request.startTime)}
+                    </div>
+                    <div>
+                      <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span 
@@ -189,6 +179,7 @@ const RequestList: React.FC = () => {
       <RequestModal 
         isOpen={isOpen}
         onClose={closeModal}
+        onRequestSubmitted={handleRequestSubmitted}
       />
     </div>
   );

@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from 'react';
 import { Modal } from '@/components/ui/modal';
+import api from '@/utils/api';
 
 interface RequestModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onRequestSubmitted?: () => void;
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
   isOpen,
   onClose,
+  onRequestSubmitted,
 }) => {
   const [formData, setFormData] = useState({
     requestType: 'work-time',
@@ -59,8 +62,24 @@ const RequestModal: React.FC<RequestModalProps> = ({
     setError(null);
     
     try {
-      // Just log the data instead of sending it to the server
-      console.log('Request data:', formData);
+      console.log('Sending request with data:', {
+        type: formData.requestType,
+        startTime: new Date(formData.startDateTime).toISOString(),
+        endTime: new Date(formData.endDateTime).toISOString(),
+        reason: formData.reason,
+        status: 'pending'
+      });
+      
+      // Send the request to the server using the /api/requests/create endpoint to avoid routing conflicts
+      const response = await api.post('/requests/create', {
+        type: formData.requestType,
+        startTime: new Date(formData.startDateTime).toISOString(),
+        endTime: new Date(formData.endDateTime).toISOString(),
+        reason: formData.reason,
+        status: 'pending'
+      });
+      
+      console.log('Response:', response.data);
       
       // Reset form
       setFormData({
@@ -72,13 +91,39 @@ const RequestModal: React.FC<RequestModalProps> = ({
       
       setSuccess(true);
       
+      // Notify parent component to refresh the request list
+      if (onRequestSubmitted) {
+        onRequestSubmitted();
+      }
+      
       // Close modal after successful submission
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (err) {
-      setError('Failed to create request');
-      console.error(err);
+    } catch (err: unknown) {
+      console.error('Full error object:', err);
+      
+      // More detailed error logging
+      if (err && typeof err === 'object' && 'response' in err) {
+        const response = (err as any).response;
+        console.error('Error response data:', response?.data);
+        console.error('Error status:', response?.status);
+        console.error('Error headers:', response?.headers);
+        
+        // Extract error message or show validation errors if available
+        if (response?.data?.errors && Array.isArray(response.data.errors)) {
+          const errorMessages = response.data.errors.map((e: any) => 
+            `${e.path}: ${e.msg}`
+          ).join(', ');
+          setError(`Validation errors: ${errorMessages}`);
+        } else if (response?.data?.message) {
+          setError(response.data.message);
+        } else {
+          setError('Failed to create request. Please try again.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

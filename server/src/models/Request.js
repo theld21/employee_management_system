@@ -1,33 +1,24 @@
 const mongoose = require("mongoose");
 
-const AttendanceRequestSchema = new mongoose.Schema(
+const RequestSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    attendance: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Attendance",
-      required: true,
-    },
-    requestType: {
+    type: {
       type: String,
-      enum: ["check-in", "check-out", "both"],
+      enum: ["work-time", "leave-request", "wfh-request", "overtime"],
       required: true,
     },
-    currentCheckIn: {
+    startTime: {
       type: Date,
+      required: true,
     },
-    currentCheckOut: {
+    endTime: {
       type: Date,
-    },
-    requestedCheckIn: {
-      type: Date,
-    },
-    requestedCheckOut: {
-      type: Date,
+      required: true,
     },
     reason: {
       type: String,
@@ -36,16 +27,10 @@ const AttendanceRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: [
-        "pending",
-        "approved-level2",
-        "approved",
-        "rejected-level2",
-        "rejected-level1",
-      ],
+      enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
-    approvalLevel2: {
+    approvedBy: {
       user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -53,7 +38,7 @@ const AttendanceRequestSchema = new mongoose.Schema(
       date: Date,
       comment: String,
     },
-    approvalLevel1: {
+    rejectedBy: {
       user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -67,4 +52,4 @@ const AttendanceRequestSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("AttendanceRequest", AttendanceRequestSchema);
+module.exports = mongoose.model("Request", RequestSchema);
