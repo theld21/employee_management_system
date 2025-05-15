@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { DatesSetArg, EventInput, EventContentArg } from '@fullcalendar/core';
+import { EventContentArg, EventSourceFuncArg } from '@fullcalendar/core';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 
@@ -43,9 +43,7 @@ interface CalendarAttendanceData {
 
 const AttendanceCalendar = () => {
   const { token } = useAuth();
-  const [events, setEvents] = useState<CalendarAttendanceData[]>([]);
   const calendarRef = useRef<FullCalendar | null>(null);
-  const fetchingRef = useRef(false);
   
   // Today's attendance state
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
@@ -91,26 +89,28 @@ const AttendanceCalendar = () => {
     fetchTodayAttendance();
   }, [token]);
   
-  // Function to fetch attendance data based on visible date range
-  const fetchAttendanceData = async (start: Date, end: Date): Promise<void> => {
-    // Prevent concurrent fetches
-    if (fetchingRef.current) return;
-    
+  // Calendar event loading function
+  const handleEventsFetch = async (
+    info: EventSourceFuncArg,
+    successCallback: (events: CalendarAttendanceData[]) => void,
+    failureCallback: (error: Error) => void
+  ) => {
     try {
-      if (!token) return;
+      if (!token) {
+        failureCallback(new Error('No authorization token'));
+        return;
+      }
       
-      fetchingRef.current = true;
-      console.log('Fetching attendance data for:', start, 'to', end);
-
       const params = new URLSearchParams({
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
+        startDate: info.startStr,
+        endDate: info.endStr,
       });
       
       const response = await api.get(`/attendance/my?${params}`);
       
       if (!response.data) {
-        throw new Error('Failed to fetch attendance data');
+        failureCallback(new Error('Failed to fetch attendance data'));
+        return;
       }
 
       const isLateCheckIn = (timeString?: string): boolean => {
@@ -158,18 +158,11 @@ const AttendanceCalendar = () => {
         }
       });
       
-      setEvents(attendanceData);
+      successCallback(attendanceData);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
-    } finally {
-      fetchingRef.current = false;
+      failureCallback(error instanceof Error ? error : new Error(String(error)));
     }
-  };
-  
-  // Handle date change in calendar
-  const handleDatesSet = (arg: DatesSetArg) => {
-    const { start, end } = arg;
-    fetchAttendanceData(start, end);
   };
   
   // Custom render for events
@@ -195,12 +188,7 @@ const AttendanceCalendar = () => {
       
       // Refresh calendar data
       if (calendarRef.current) {
-        const calendarApi = calendarRef.current.getApi();
-        const view = calendarApi.view;
-        fetchAttendanceData(
-          new Date(view.currentStart),
-          new Date(view.currentEnd)
-        );
+        calendarRef.current.getApi().refetchEvents();
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -222,12 +210,7 @@ const AttendanceCalendar = () => {
       
       // Refresh calendar data
       if (calendarRef.current) {
-        const calendarApi = calendarRef.current.getApi();
-        const view = calendarApi.view;
-        fetchAttendanceData(
-          new Date(view.currentStart),
-          new Date(view.currentEnd)
-        );
+        calendarRef.current.getApi().refetchEvents();
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -305,13 +288,14 @@ const AttendanceCalendar = () => {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin]}
+            initialView="dayGridMonth"
+            initialDate={new Date()}
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
               right: ''
             }}
-            events={events as unknown as EventInput[]}
-            datesSet={handleDatesSet}
+            events={handleEventsFetch}
             height="auto"
             eventContent={renderEventContent}
             eventTimeFormat={{
