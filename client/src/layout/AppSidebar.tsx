@@ -37,49 +37,6 @@ const navItems: NavItem[] = [
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M22 12V17C22 20 20 22 17 22H7C4 22 2 20 2 17V12C2 9.3 3.8 7.4 6.5 7.1C6.8 7.1 7.1 7 7.5 7H16.5C16.9 7 17.2 7 17.5 7.1C20.2 7.4 22 9.3 22 12Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M17.5 7.1C17.2 7 16.9 7 16.5 7H7.5C7.1 7 6.8 7 6.5 7.1C6.8 4.6 9.1 2.7 12 2.7C14.9 2.7 17.2 4.6 17.5 7.1Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 13H16"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 17H16"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeMiterlimit="10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>,
-    name: "Attendance",
-    path: "/attendance",
-  },
-  {
-    icon: <svg 
-      className="w-5 h-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
         d="M8 2V5"
         stroke="currentColor"
         strokeWidth="1.5"
