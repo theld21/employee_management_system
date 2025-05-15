@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
+import { useModal } from '@/hooks/useModal';
+import RequestModal from './RequestModal';
 
 interface AttendanceRequest {
   _id: string;
@@ -31,34 +33,35 @@ interface AttendanceRequest {
   };
 }
 
-interface RequestListProps {
-  requestsUpdated: boolean;
-}
-
-const RequestList: React.FC<RequestListProps> = ({ requestsUpdated }) => {
+const RequestList: React.FC = () => {
   const { token } = useAuth();
   const [requests, setRequests] = useState<AttendanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isOpen, openModal, closeModal } = useModal();
+
+  const fetchRequests = async () => {
+    if (!token) return;
+    
+    setLoading(true);
+    try {
+      const response = await api.get('/requests/my');
+      setRequests(response.data);
+    } catch (err) {
+      setError('Error fetching requests');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      if (!token) return;
-      
-      setLoading(true);
-      try {
-        const response = await api.get('/requests/my');
-        setRequests(response.data);
-      } catch (err) {
-        setError('Error fetching requests');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchRequests();
   }, [token]);
+
+  const handleCreateRequest = () => {
+    openModal();
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -106,7 +109,15 @@ const RequestList: React.FC<RequestListProps> = ({ requestsUpdated }) => {
 
   return (
     <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
-      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">My Requests</h3>
+      <div className="mb-5 flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">My Requests</h3>
+        <button
+          onClick={handleCreateRequest}
+          className="px-4 py-2.5 rounded-lg bg-blue-500 text-sm font-medium text-white hover:bg-blue-600 focus:ring-4 focus:ring-blue-300/30"
+        >
+          Create Request
+        </button>
+      </div>
       
       {loading ? (
         <div className="flex h-40 items-center justify-center">
@@ -173,6 +184,12 @@ const RequestList: React.FC<RequestListProps> = ({ requestsUpdated }) => {
           </table>
         </div>
       )}
+
+      {/* Request Modal */}
+      <RequestModal 
+        isOpen={isOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 };
