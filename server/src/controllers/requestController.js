@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const Request = require("../models/Request");
 const User = require("../models/User");
 const Group = require("../models/Group");
+const RequestStatus = require("../constants/requestStatus");
 
 // Create a new request
 exports.createRequest = async (req, res) => {
@@ -11,17 +12,19 @@ exports.createRequest = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { type, startTime, endTime, reason, status = "pending" } = req.body;
+    const { type, startTime, endTime, reason, status } = req.body;
     const userId = req.user.id;
 
-    // Create request
+    // Create request - default status is PENDING (1)
     const request = new Request({
       user: userId,
       type,
       startTime,
       endTime,
       reason,
-      status,
+      status: status
+        ? RequestStatus.getStatusCode(status)
+        : RequestStatus.PENDING,
     });
 
     await request.save();
@@ -46,7 +49,10 @@ exports.getUserRequests = async (req, res) => {
 
     const query = { user: userId };
     if (status) {
-      query.status = status;
+      // Convert status text to status code if needed
+      query.status = isNaN(parseInt(status))
+        ? RequestStatus.getStatusCode(status)
+        : parseInt(status);
     }
     if (type) {
       query.type = type;
@@ -108,9 +114,11 @@ exports.getPendingRequests = async (req, res) => {
 
     // For admins, get all pending requests
     if (role === "admin") {
-      const total = await Request.countDocuments({ status: "pending" });
+      const total = await Request.countDocuments({
+        status: RequestStatus.PENDING,
+      });
 
-      const requests = await Request.find({ status: "pending" })
+      const requests = await Request.find({ status: RequestStatus.PENDING })
         .populate("user", "firstName lastName username email group")
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -150,7 +158,7 @@ exports.getPendingRequests = async (req, res) => {
 
       const query = {
         user: { $in: userIds },
-        status: "pending",
+        status: RequestStatus.PENDING,
       };
 
       const total = await Request.countDocuments(query);
@@ -214,7 +222,7 @@ exports.processRequest = async (req, res) => {
     }
 
     // Check if the request is already processed
-    if (request.status !== "pending") {
+    if (request.status !== RequestStatus.PENDING) {
       return res
         .status(400)
         .json({ message: "This request has already been processed" });
@@ -233,7 +241,8 @@ exports.processRequest = async (req, res) => {
     }
 
     // Update request status
-    request.status = action === "approve" ? "approved" : "rejected";
+    request.status =
+      action === "approve" ? RequestStatus.APPROVED : RequestStatus.REJECTED;
 
     if (action === "approve") {
       request.approvedBy = {
@@ -283,7 +292,7 @@ exports.cancelRequest = async (req, res) => {
     }
 
     // Check if the request is still pending
-    if (request.status !== "pending") {
+    if (request.status !== RequestStatus.PENDING) {
       return res
         .status(400)
         .json({ message: "Only pending requests can be cancelled" });
@@ -298,7 +307,7 @@ exports.cancelRequest = async (req, res) => {
     }
 
     // Update request status to cancelled
-    request.status = "cancelled";
+    request.status = RequestStatus.CANCELLED;
     request.cancelledBy = {
       user: userId,
       date: new Date(),

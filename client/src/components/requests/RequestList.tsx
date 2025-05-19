@@ -5,6 +5,7 @@ import api from '@/utils/api';
 import { useModal } from '@/hooks/useModal';
 import RequestModal from './RequestModal';
 import { Modal } from '@/components/ui/modal';
+import RequestStatus from '@/constants/requestStatus';
 
 interface Request {
   _id: string;
@@ -12,7 +13,7 @@ interface Request {
   startTime: string;
   endTime: string;
   reason: string;
-  status: string;
+  status: number;
   createdAt: string;
   approvedBy?: {
     user: {
@@ -168,15 +169,15 @@ const RequestList: React.FC = () => {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusBadgeClass = (status: number) => {
     switch (status) {
-      case 'pending':
+      case RequestStatus.PENDING:
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'approved':
+      case RequestStatus.APPROVED:
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'rejected':
+      case RequestStatus.REJECTED:
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'cancelled':
+      case RequestStatus.CANCELLED:
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
@@ -198,19 +199,8 @@ const RequestList: React.FC = () => {
     }
   };
 
-  const formatStatus = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Pending';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return status;
-    }
+  const formatStatus = (status: number) => {
+    return RequestStatus.getStatusText(status).charAt(0).toUpperCase() + RequestStatus.getStatusText(status).slice(1);
   };
 
   // Simplified cancel request handler
@@ -218,7 +208,7 @@ const RequestList: React.FC = () => {
     if (!selectedRequest) return;
     
     // Đảm bảo chỉ request ở trạng thái pending mới có thể bị hủy
-    if (selectedRequest.status !== 'pending') {
+    if (selectedRequest.status !== RequestStatus.PENDING) {
       setCancelError('Only pending requests can be cancelled');
       return;
     }
@@ -448,7 +438,7 @@ const RequestList: React.FC = () => {
               <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
             </div>
             
-            {selectedRequest.status === 'approved' && selectedRequest.approvedBy && (
+            {selectedRequest.status === RequestStatus.APPROVED && selectedRequest.approvedBy && (
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Approved Information</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
@@ -465,7 +455,7 @@ const RequestList: React.FC = () => {
               </div>
             )}
             
-            {selectedRequest.status === 'rejected' && selectedRequest.rejectedBy && (
+            {selectedRequest.status === RequestStatus.REJECTED && selectedRequest.rejectedBy && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Rejection Information</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
@@ -482,7 +472,7 @@ const RequestList: React.FC = () => {
               </div>
             )}
             
-            {selectedRequest.status === 'cancelled' && selectedRequest.cancelledBy && (
+            {selectedRequest.status === RequestStatus.CANCELLED && selectedRequest.cancelledBy && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Cancellation Information</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
@@ -503,42 +493,49 @@ const RequestList: React.FC = () => {
               </div>
             )}
             
-            {/* Add the cancel button only for pending requests */}
-            <div className="flex justify-end mt-6">
-              {selectedRequest && selectedRequest.status === 'pending' && !showCancelConfirm && (
+            {/* Show cancel button only for pending requests */}
+            {selectedRequest && selectedRequest.status === RequestStatus.PENDING && !showCancelConfirm && (
+              <div className="mt-6 flex items-center justify-end">
                 <button
                   onClick={() => setShowCancelConfirm(true)}
-                  className="px-4 py-2 mr-2 rounded-lg bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30"
+                  className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30"
                 >
                   Cancel Request
                 </button>
-              )}
-              
-              {/* Cancel confirmation tooltip */}
-              {showCancelConfirm && (
-                <div className="flex items-center mr-2">
+              </div>
+            )}
+            
+            {/* Confirmation dialog for cancellation */}
+            {selectedRequest && selectedRequest.status === RequestStatus.PENDING && showCancelConfirm && (
+              <div className="mt-6">
+                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                    Are you sure you want to cancel this request? This action cannot be undone.
+                  </p>
+                </div>
+                
+                {cancelError && (
+                  <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                    {cancelError}
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                    disabled={cancelLoading}
+                  >
+                    No, Keep Request
+                  </button>
                   <button
                     onClick={handleCancelRequest}
+                    className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30 disabled:opacity-70 disabled:cursor-not-allowed"
                     disabled={cancelLoading}
-                    className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30 disabled:opacity-70 mr-1"
                   >
-                    {cancelLoading ? '...' : 'Confirm cancel request'}
+                    {cancelLoading ? 'Cancelling...' : 'Yes, Cancel Request'}
                   </button>
                 </div>
-              )}
-              
-              <button
-                onClick={closeDetailModal}
-                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-              >
-                Close
-              </button>
-            </div>
-            
-            {/* Show error if cancellation fails */}
-            {cancelError && (
-              <div className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                {cancelError}
               </div>
             )}
           </div>

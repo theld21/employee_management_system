@@ -2,11 +2,27 @@
 import React, { useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import api from '@/utils/api';
+import RequestStatus from '@/constants/requestStatus';
 
 interface RequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRequestSubmitted?: () => void;
+}
+
+// Define interfaces for API error handling
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+      errors?: Array<{
+        path: string;
+        msg: string;
+      }>;
+    };
+    status?: number;
+    headers?: Record<string, string>;
+  };
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
@@ -67,7 +83,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
         startTime: new Date(formData.startDateTime).toISOString(),
         endTime: new Date(formData.endDateTime).toISOString(),
         reason: formData.reason,
-        status: 'pending'
+        status: RequestStatus.PENDING
       });
       
       // Send the request to the server using the /api/requests/create endpoint to avoid routing conflicts
@@ -76,7 +92,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
         startTime: new Date(formData.startDateTime).toISOString(),
         endTime: new Date(formData.endDateTime).toISOString(),
         reason: formData.reason,
-        status: 'pending'
+        status: RequestStatus.PENDING
       });
       
       console.log('Response:', response.data);
@@ -105,14 +121,14 @@ const RequestModal: React.FC<RequestModalProps> = ({
       
       // More detailed error logging
       if (err && typeof err === 'object' && 'response' in err) {
-        const response = (err as any).response;
+        const response = (err as ApiError).response;
         console.error('Error response data:', response?.data);
         console.error('Error status:', response?.status);
         console.error('Error headers:', response?.headers);
         
         // Extract error message or show validation errors if available
         if (response?.data?.errors && Array.isArray(response.data.errors)) {
-          const errorMessages = response.data.errors.map((e: any) => 
+          const errorMessages = response.data.errors.map((e) => 
             `${e.path}: ${e.msg}`
           ).join(', ');
           setError(`Validation errors: ${errorMessages}`);
