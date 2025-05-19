@@ -48,10 +48,28 @@ exports.getUserRequests = async (req, res) => {
     }
 
     const requests = await Request.find(query)
-      .populate("approvedBy.user", "firstName lastName")
-      .populate("rejectedBy.user", "firstName lastName")
-      .populate("cancelledBy.user", "firstName lastName")
+      .populate({
+        path: "approvedBy.user",
+        select: "firstName lastName",
+      })
+      .populate({
+        path: "rejectedBy.user",
+        select: "firstName lastName",
+      })
+      .populate({
+        path: "cancelledBy.user",
+        select: "firstName lastName",
+      })
       .sort({ createdAt: -1 });
+
+    console.log(
+      "Requests with populated data:",
+      requests.map((req) => ({
+        id: req._id,
+        status: req.status,
+        cancelledBy: req.cancelledBy,
+      }))
+    );
 
     res.json(requests);
   } catch (error) {
@@ -185,7 +203,7 @@ exports.cancelRequest = async (req, res) => {
     }
 
     const { requestId } = req.params;
-    const { reason } = req.body;
+    const { reason = "Request cancelled by user" } = req.body;
     const userId = req.user.id;
 
     // Find the request
@@ -217,7 +235,22 @@ exports.cancelRequest = async (req, res) => {
     };
 
     await request.save();
-    res.json(request);
+
+    console.log("Request before populate:", JSON.stringify(request));
+
+    // Populate user information before returning
+    await request.populate({
+      path: "cancelledBy.user",
+      select: "firstName lastName",
+    });
+
+    console.log("Request after populate:", JSON.stringify(request));
+
+    res.json({
+      success: true,
+      message: "Request cancelled successfully",
+      data: request,
+    });
   } catch (error) {
     console.error("Error cancelling request:", error);
     res.status(500).json({ message: "Server error" });

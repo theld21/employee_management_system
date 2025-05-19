@@ -12,10 +12,10 @@ interface Request {
   reason: string;
   status: string;
   createdAt: string;
-  user: {
+    user: {
     _id: string;
-    firstName: string;
-    lastName: string;
+      firstName: string;
+      lastName: string;
     email: string;
   };
 }
@@ -60,7 +60,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         setLoading(false);
       }
     };
-    
+
     fetchPendingRequests();
   }, [requestsUpdated]);
 
@@ -238,10 +238,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                   <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
                     <div>
                       <span className="font-medium">From:</span> {formatDateTime(request.startTime)}
-                    </div>
-                    <div>
+                      </div>
+                      <div>
                       <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
-                    </div>
+                      </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -288,9 +288,9 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Comment (Optional)
           </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
             placeholder={`Add a comment about why you're ${currentAction === 'approve' ? 'approving' : 'rejecting'} this request...`}
             rows={3}
@@ -298,14 +298,14 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         </div>
         
         <div className="flex justify-end gap-3">
-          <button
-            onClick={handleCloseModal}
+              <button
+                onClick={handleCloseModal}
             className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleProcessRequest}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProcessRequest}
             disabled={!!processingRequest}
             className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
               currentAction === 'approve' 
@@ -319,7 +319,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 ? 'Approve' 
                 : 'Reject'
             }
-          </button>
+              </button>
         </div>
       </Modal>
       
@@ -369,8 +369,8 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 <p className="text-gray-800 dark:text-gray-300">
                   <span className="font-medium">To:</span> {formatDateTime(selectedRequest.endTime)}
                 </p>
-              </div>
-            </div>
+          </div>
+        </div>
             
             <div className="mb-4">
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</h4>
@@ -378,12 +378,12 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
             </div>
             
             <div className="flex justify-end gap-3 mt-6">
-              <button
+            <button
                 onClick={closeDetailModal}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                Close
-              </button>
+            >
+              Close
+            </button>
               <button
                 onClick={handleRejectFromDetails}
                 className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600"
@@ -396,9 +396,9 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
               >
                 Approve
               </button>
-            </div>
           </div>
-        )}
+        </div>
+      )}
       </Modal>
     </div>
   );

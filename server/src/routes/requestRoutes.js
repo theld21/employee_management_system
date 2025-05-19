@@ -68,7 +68,7 @@ router.put(
 router.put(
   "/cancel/:requestId",
   auth,
-  [check("reason", "Cancellation reason is required").notEmpty()],
+  [check("reason").optional()],
   requestController.cancelRequest
 );
 

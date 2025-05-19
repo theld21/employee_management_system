@@ -13,10 +13,10 @@ const AdminRequestsPage = () => {
   return (
     <div>
       <PageBreadcrumb pageTitle="Manage Requests" />
-      <PendingRequestsList 
-        requestsUpdated={requestsUpdated} 
-        onRequestProcessed={handleRequestProcessed}
-      />
+        <PendingRequestsList 
+          requestsUpdated={requestsUpdated} 
+          onRequestProcessed={handleRequestProcessed}
+        />
     </div>
   );
 };

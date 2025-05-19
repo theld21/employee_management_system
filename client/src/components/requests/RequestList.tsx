@@ -30,6 +30,14 @@ interface Request {
     date: string;
     comment: string;
   };
+  cancelledBy?: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    date: string;
+    reason: string;
+  };
   user?: {
     _id: string;
     firstName: string;
@@ -47,6 +55,10 @@ const RequestList: React.FC = () => {
   // For request details modal
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  // Simplify cancellation state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const fetchRequests = async () => {
     if (!token) return;
@@ -55,7 +67,7 @@ const RequestList: React.FC = () => {
     try {
       const response = await api.get('/requests/my');
       setRequests(response.data);
-    } catch (err) {
+    } catch (err: unknown) {
       setError('Error fetching requests');
       console.error(err);
     } finally {
@@ -66,6 +78,14 @@ const RequestList: React.FC = () => {
   useEffect(() => {
     fetchRequests();
   }, [token]);
+
+  // Thêm useEffect để log thông tin request được chọn
+  useEffect(() => {
+    if (selectedRequest && selectedRequest.status === 'cancelled' && selectedRequest.cancelledBy) {
+      console.log('Selected Request:', selectedRequest);
+      console.log('Cancelled By:', selectedRequest.cancelledBy);
+    }
+  }, [selectedRequest]);
 
   const handleCreateRequest = () => {
     openModal();
@@ -83,6 +103,8 @@ const RequestList: React.FC = () => {
   const closeDetailModal = () => {
     setShowDetailModal(false);
     setSelectedRequest(null);
+    setShowCancelConfirm(false);
+    setCancelError(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -104,6 +126,8 @@ const RequestList: React.FC = () => {
       case 'approved':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       case 'rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      case 'cancelled':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
@@ -133,8 +157,59 @@ const RequestList: React.FC = () => {
         return 'Approved';
       case 'rejected':
         return 'Rejected';
+      case 'cancelled':
+        return 'Cancelled';
       default:
         return status;
+    }
+  };
+
+  // Simplified cancel request handler
+  const handleCancelRequest = async () => {
+    if (!selectedRequest) return;
+    
+    // Đảm bảo chỉ request ở trạng thái pending mới có thể bị hủy
+    if (selectedRequest.status !== 'pending') {
+      setCancelError('Only pending requests can be cancelled');
+      return;
+    }
+    
+    setCancelLoading(true);
+    setCancelError(null);
+    
+    try {
+      // Use the original cancel endpoint with a default reason
+      const response = await api.put(`/requests/cancel/${selectedRequest._id}`, {
+        reason: "Request cancelled by user"
+      });
+      
+      // Xử lý cấu trúc phản hồi mới
+      const updatedRequest = response.data.data || response.data;
+      
+      // Update the local state with the response data
+      setRequests(prevRequests => 
+        prevRequests.map(req => 
+          req._id === selectedRequest._id ? { ...updatedRequest } : req
+        )
+      );
+      
+      // Update the selected request view with the response data
+      setSelectedRequest(updatedRequest);
+      
+      // Hide the cancel confirmation
+      setShowCancelConfirm(false);
+      
+    } catch (err: unknown) {
+      console.error('Error cancelling request:', err);
+      // Use type assertion to safely access response data
+      if (err && typeof err === 'object' && 'response' in err) {
+        const response = (err as { response: { data?: { message?: string } } }).response;
+        setCancelError(response?.data?.message || 'Failed to cancel request');
+      } else {
+        setCancelError('Failed to cancel request');
+      }
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -295,7 +370,51 @@ const RequestList: React.FC = () => {
               </div>
             )}
             
+            {selectedRequest.status === 'cancelled' && selectedRequest.cancelledBy && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Cancellation Information</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  <span className="font-medium">Cancelled by:</span> {
+                    selectedRequest.cancelledBy.user && selectedRequest.cancelledBy.user.firstName 
+                    ? `${selectedRequest.cancelledBy.user.firstName} ${selectedRequest.cancelledBy.user.lastName}`
+                    : ''
+                  }
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Cancelled on:</span> {formatDateTime(selectedRequest.cancelledBy.date)}
+                </p>
+                {selectedRequest.cancelledBy.reason && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    <span className="font-medium">Reason:</span> {selectedRequest.cancelledBy.reason}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Add the cancel button only for pending requests */}
             <div className="flex justify-end mt-6">
+              {selectedRequest && selectedRequest.status === 'pending' && !showCancelConfirm && (
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="px-4 py-2 mr-2 rounded-lg bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30"
+                >
+                  Cancel Request
+                </button>
+              )}
+              
+              {/* Cancel confirmation tooltip */}
+              {showCancelConfirm && (
+                <div className="flex items-center mr-2">
+                  <button
+                    onClick={handleCancelRequest}
+                    disabled={cancelLoading}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30 disabled:opacity-70 mr-1"
+                  >
+                    {cancelLoading ? '...' : 'Confirm cancel request'}
+                  </button>
+                </div>
+              )}
+              
               <button
                 onClick={closeDetailModal}
                 className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
@@ -303,6 +422,13 @@ const RequestList: React.FC = () => {
                 Close
               </button>
             </div>
+            
+            {/* Show error if cancellation fails */}
+            {cancelError && (
+              <div className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                {cancelError}
+              </div>
+            )}
           </div>
         )}
       </Modal>
@@ -310,4 +436,4 @@ const RequestList: React.FC = () => {
   );
 };
 
-export default RequestList; 
+export default RequestList;
