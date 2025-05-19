@@ -79,14 +79,6 @@ const RequestList: React.FC = () => {
     fetchRequests();
   }, [token]);
 
-  // Thêm useEffect để log thông tin request được chọn
-  useEffect(() => {
-    if (selectedRequest && selectedRequest.status === 'cancelled' && selectedRequest.cancelledBy) {
-      console.log('Selected Request:', selectedRequest);
-      console.log('Cancelled By:', selectedRequest.cancelledBy);
-    }
-  }, [selectedRequest]);
-
   const handleCreateRequest = () => {
     openModal();
   };
@@ -179,25 +171,15 @@ const RequestList: React.FC = () => {
     
     try {
       // Use the original cancel endpoint with a default reason
-      const response = await api.put(`/requests/cancel/${selectedRequest._id}`, {
+      await api.put(`/requests/cancel/${selectedRequest._id}`, {
         reason: "Request cancelled by user"
       });
       
-      // Xử lý cấu trúc phản hồi mới
-      const updatedRequest = response.data.data || response.data;
+      // Đóng modal chi tiết request
+      closeDetailModal();
       
-      // Update the local state with the response data
-      setRequests(prevRequests => 
-        prevRequests.map(req => 
-          req._id === selectedRequest._id ? { ...updatedRequest } : req
-        )
-      );
-      
-      // Update the selected request view with the response data
-      setSelectedRequest(updatedRequest);
-      
-      // Hide the cancel confirmation
-      setShowCancelConfirm(false);
+      // Tải lại danh sách requests
+      fetchRequests();
       
     } catch (err: unknown) {
       console.error('Error cancelling request:', err);
@@ -208,7 +190,6 @@ const RequestList: React.FC = () => {
       } else {
         setCancelError('Failed to cancel request');
       }
-    } finally {
       setCancelLoading(false);
     }
   };
@@ -377,7 +358,7 @@ const RequestList: React.FC = () => {
                   <span className="font-medium">Cancelled by:</span> {
                     selectedRequest.cancelledBy.user && selectedRequest.cancelledBy.user.firstName 
                     ? `${selectedRequest.cancelledBy.user.firstName} ${selectedRequest.cancelledBy.user.lastName}`
-                    : ''
+                    : 'You'
                   }
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">

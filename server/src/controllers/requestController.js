@@ -226,6 +226,14 @@ exports.cancelRequest = async (req, res) => {
         .json({ message: "Only pending requests can be cancelled" });
     }
 
+    // Lấy thông tin người dùng hiện tại để thêm vào response
+    const currentUser = await User.findById(userId).select(
+      "firstName lastName"
+    );
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     // Update request status to cancelled
     request.status = "cancelled";
     request.cancelledBy = {
@@ -236,20 +244,23 @@ exports.cancelRequest = async (req, res) => {
 
     await request.save();
 
-    console.log("Request before populate:", JSON.stringify(request));
+    // Tạo một đối tượng response với thông tin đầy đủ
+    const responseData = request.toObject();
 
-    // Populate user information before returning
-    await request.populate({
-      path: "cancelledBy.user",
-      select: "firstName lastName",
-    });
-
-    console.log("Request after populate:", JSON.stringify(request));
+    // Thêm thông tin người hủy vào response
+    responseData.cancelledBy = {
+      ...responseData.cancelledBy,
+      user: {
+        _id: currentUser._id,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+      },
+    };
 
     res.json({
       success: true,
       message: "Request cancelled successfully",
-      data: request,
+      data: responseData,
     });
   } catch (error) {
     console.error("Error cancelling request:", error);
