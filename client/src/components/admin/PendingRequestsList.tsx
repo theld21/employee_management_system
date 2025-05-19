@@ -34,6 +34,12 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null);
@@ -46,23 +52,74 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
-  useEffect(() => {
-    const fetchPendingRequests = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await api.get('/requests/pending');
-        setPendingRequests(response.data);
-      } catch (err) {
-        console.error('Error fetching pending requests:', err);
-        setError('Failed to load pending requests');
-      } finally {
-        setLoading(false);
+  const fetchPendingRequests = async (page = currentPage, limit = pageSize) => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log(`Fetching pending requests with params: page=${page}, limit=${limit}`);
+      const response = await api.get(`/requests/pending?page=${page}&limit=${limit}`);
+      
+      console.log('API Response status:', response.status);
+      const data = response.data;
+      console.log('API Response data:', data);
+      
+      // Handle both new paginated format and old direct array format
+      if (data && typeof data === 'object' && 'requests' in data && 'pagination' in data) {
+        console.log('Using paginated format:', data.pagination);
+        // New format with pagination
+        setPendingRequests(data.requests);
+        setTotalItems(data.pagination.total);
+        setTotalPages(data.pagination.totalPages);
+        setCurrentPage(data.pagination.page);
+      } else if (Array.isArray(data)) {
+        console.log('Using array format, length:', data.length);
+        // Old format (direct array of requests)
+        setPendingRequests(data);
+        setTotalItems(data.length);
+        setTotalPages(1); 
+        setCurrentPage(1);
+      } else {
+        console.error('Unexpected response format:', data);
+        setError('Unexpected response format from server');
       }
-    };
+    } catch (err) {
+      console.error('Full error object:', err);
+      
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorResponse = (err as {
+          response: {
+            status: number;
+            data: unknown;
+          }
+        }).response;
+        console.error('Error status:', errorResponse?.status);
+        console.error('Error data:', errorResponse?.data);
+      }
+      
+      setError('Failed to load pending requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPendingRequests();
   }, [requestsUpdated]);
+  
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    fetchPendingRequests(newPage);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(event.target.value, 10);
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page
+    fetchPendingRequests(1, newSize);
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -192,7 +249,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         </div>
       )}
       
-      {loading ? (
+      {loading && pendingRequests.length === 0 ? (
         <div className="flex h-40 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
         </div>
@@ -202,70 +259,144 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         </div>
       ) : pendingRequests.length === 0 ? (
         <div className="rounded-lg bg-gray-100 px-4 py-8 text-center text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-          No pending requests to review.
+          There are no pending requests to review.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">User</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingRequests.map((request) => (
-                <tr 
-                  key={request._id} 
-                  className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50 cursor-pointer"
-                  onClick={(e) => handleShowRequestDetails(request, e)}
-                >
-                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    {formatDate(request.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    {request.user.firstName} {request.user.lastName}
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {request.user.email}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    {formatRequestType(request.type)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
-                    <div>
-                      <span className="font-medium">From:</span> {formatDateTime(request.startTime)}
-                      </div>
-                      <div>
-                      <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
-                      </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => handleOpenModal(request._id, 'approve', e)}
-                        disabled={processingRequest === request._id}
-                        className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={(e) => handleOpenModal(request._id, 'reject', e)}
-                        disabled={processingRequest === request._id}
-                        className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">User</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pendingRequests.map((request) => (
+                  <tr 
+                    key={request._id} 
+                    className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50 cursor-pointer"
+                    onClick={(e) => handleShowRequestDetails(request, e)}
+                  >
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
+                      {formatDate(request.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
+                      {request.user.firstName} {request.user.lastName}
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {request.user.email}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
+                      {formatRequestType(request.type)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
+                      <div>
+                        <span className="font-medium">From:</span> {formatDateTime(request.startTime)}
+                        </div>
+                        <div>
+                        <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
+                        </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => handleOpenModal(request._id, 'approve', e)}
+                          disabled={processingRequest === request._id}
+                          className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={(e) => handleOpenModal(request._id, 'reject', e)}
+                          disabled={processingRequest === request._id}
+                          className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Pagination UI */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <label htmlFor="page-size" className="text-sm text-gray-500 dark:text-gray-400">
+                Show:
+              </label>
+              <select
+                id="page-size"
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                of {totalItems} items
+              </span>
+            </div>
+
+            <div className="flex items-center justify-center space-x-1">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+              >
+                <span className="sr-only">First Page</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="11 17 6 12 11 7"></polyline>
+                  <polyline points="18 17 13 12 18 7"></polyline>
+                </svg>
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+              >
+                <span className="sr-only">Previous Page</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              
+              <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+              >
+                <span className="sr-only">Next Page</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+              >
+                <span className="sr-only">Last Page</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="13 17 18 12 13 7"></polyline>
+                  <polyline points="6 17 11 12 6 7"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Comment Modal */}

@@ -37,7 +37,12 @@ exports.createRequest = async (req, res) => {
 exports.getUserRequests = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { status, type } = req.query;
+    const { status, type, page = 1, limit = 10 } = req.query;
+
+    // Convert page and limit to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
 
     const query = { user: userId };
     if (status) {
@@ -47,6 +52,10 @@ exports.getUserRequests = async (req, res) => {
       query.type = type;
     }
 
+    // Count total documents for pagination info
+    const total = await Request.countDocuments(query);
+
+    // Get paginated requests
     const requests = await Request.find(query)
       .populate({
         path: "approvedBy.user",
@@ -60,18 +69,26 @@ exports.getUserRequests = async (req, res) => {
         path: "cancelledBy.user",
         select: "firstName lastName",
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
 
     console.log(
-      "Requests with populated data:",
-      requests.map((req) => ({
-        id: req._id,
-        status: req.status,
-        cancelledBy: req.cancelledBy,
-      }))
+      `[PAGINATION INFO] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
+        total / limitNum
+      )}`
     );
 
-    res.json(requests);
+    // Send back pagination info along with results - ensure we're consistently using the same response format
+    res.json({
+      requests,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     console.error("Error fetching user requests:", error);
     res.status(500).json({ message: "Server error" });
@@ -82,14 +99,39 @@ exports.getUserRequests = async (req, res) => {
 exports.getPendingRequests = async (req, res) => {
   try {
     const { role, id } = req.user;
+    const { page = 1, limit = 10 } = req.query;
+
+    // Convert page and limit to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
 
     // For admins, get all pending requests
     if (role === "admin") {
+      const total = await Request.countDocuments({ status: "pending" });
+
       const requests = await Request.find({ status: "pending" })
         .populate("user", "firstName lastName username email group")
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
 
-      return res.json(requests);
+      console.log(
+        `[ADMIN PENDING REQUESTS] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
+          total / limitNum
+        )}`
+      );
+      console.log(`Returning ${requests.length} pending requests`);
+
+      return res.json({
+        requests,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     }
 
     // For managers, get pending requests from their group members
@@ -106,14 +148,35 @@ exports.getPendingRequests = async (req, res) => {
       // Get users from these groups
       const userIds = managerGroups.flatMap((group) => group.members);
 
-      const requests = await Request.find({
+      const query = {
         user: { $in: userIds },
         status: "pending",
-      })
-        .populate("user", "firstName lastName username email")
-        .sort({ createdAt: -1 });
+      };
 
-      return res.json(requests);
+      const total = await Request.countDocuments(query);
+
+      const requests = await Request.find(query)
+        .populate("user", "firstName lastName username email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      console.log(
+        `[MANAGER PENDING REQUESTS] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
+          total / limitNum
+        )}`
+      );
+      console.log(`Returning ${requests.length} pending requests`);
+
+      return res.json({
+        requests,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     }
 
     return res
