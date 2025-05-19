@@ -41,6 +41,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   const [modalError, setModalError] = useState<string | null>(null);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // For request details modal
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -61,6 +65,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   }, [requestsUpdated]);
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
@@ -85,8 +90,22 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         return type;
     }
   };
+  
+  const handleShowRequestDetails = (request: Request, e: React.MouseEvent) => {
+    // Prevent propagation to avoid triggering row click when clicking on buttons
+    e.stopPropagation();
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+  
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
 
-  const handleOpenModal = (requestId: string, action: 'approve' | 'reject') => {
+  const handleOpenModal = (requestId: string, action: 'approve' | 'reject', e: React.MouseEvent) => {
+    // Prevent click from propagating to the row handler
+    e.stopPropagation();
     setCurrentRequestId(requestId);
     setCurrentAction(action);
     setComment('');
@@ -126,6 +145,28 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
       setModalError('Failed to process the request');
     } finally {
       setProcessingRequest(null);
+    }
+  };
+  
+  const handleApproveFromDetails = () => {
+    if (selectedRequest) {
+      setCurrentRequestId(selectedRequest._id);
+      setCurrentAction('approve');
+      setComment('');
+      setModalError(null);
+      closeDetailModal();
+      setShowCommentModal(true);
+    }
+  };
+  
+  const handleRejectFromDetails = () => {
+    if (selectedRequest) {
+      setCurrentRequestId(selectedRequest._id);
+      setCurrentAction('reject');
+      setComment('');
+      setModalError(null);
+      closeDetailModal();
+      setShowCommentModal(true);
     }
   };
 
@@ -172,7 +213,6 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">User</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Reason</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
@@ -180,7 +220,8 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
               {pendingRequests.map((request) => (
                 <tr 
                   key={request._id} 
-                  className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50"
+                  className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50 cursor-pointer"
+                  onClick={(e) => handleShowRequestDetails(request, e)}
                 >
                   <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
                     {formatDate(request.createdAt)}
@@ -202,22 +243,17 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                       <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300 max-w-[200px]">
-                    <div className="line-clamp-2">
-                      {request.reason}
-                    </div>
-                  </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleOpenModal(request._id, 'approve')}
+                        onClick={(e) => handleOpenModal(request._id, 'approve', e)}
                         disabled={processingRequest === request._id}
                         className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
                       >
                         Approve
                       </button>
                       <button
-                        onClick={() => handleOpenModal(request._id, 'reject')}
+                        onClick={(e) => handleOpenModal(request._id, 'reject', e)}
                         disabled={processingRequest === request._id}
                         className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
                       >
@@ -285,6 +321,84 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
             }
           </button>
         </div>
+      </Modal>
+      
+      {/* Request Details Modal */}
+      <Modal
+        isOpen={showDetailModal}
+        onClose={closeDetailModal}
+        className="max-w-[600px] p-5 lg:p-8"
+      >
+        {selectedRequest && (
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Request Details
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Request Type</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatRequestType(selectedRequest.type)}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Submission Date</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatDate(selectedRequest.createdAt)}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester</h4>
+                <p className="text-gray-800 dark:text-gray-300">
+                  {selectedRequest.user.firstName} {selectedRequest.user.lastName}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{selectedRequest.user.email}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h4>
+                <p className="text-gray-800 dark:text-gray-300">Pending</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</h4>
+              <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-gray-800 dark:text-gray-300">
+                  <span className="font-medium">From:</span> {formatDateTime(selectedRequest.startTime)}
+                </p>
+                <p className="text-gray-800 dark:text-gray-300">
+                  <span className="font-medium">To:</span> {formatDateTime(selectedRequest.endTime)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</h4>
+              <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={closeDetailModal}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleRejectFromDetails}
+                className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600"
+              >
+                Reject
+              </button>
+              <button
+                onClick={handleApproveFromDetails}
+                className="px-4 py-2 rounded-lg bg-green-500 text-sm font-medium text-white hover:bg-green-600"
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

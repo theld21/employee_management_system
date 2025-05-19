@@ -27,7 +27,7 @@ const RequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "cancelled"],
       default: "pending",
     },
     approvedBy: {
@@ -45,6 +45,14 @@ const RequestSchema = new mongoose.Schema(
       },
       date: Date,
       comment: String,
+    },
+    cancelledBy: {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      date: Date,
+      reason: String,
     },
   },
   {

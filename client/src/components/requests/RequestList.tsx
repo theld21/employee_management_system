@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import { useModal } from '@/hooks/useModal';
 import RequestModal from './RequestModal';
+import { Modal } from '@/components/ui/modal';
 
 interface Request {
   _id: string;
@@ -13,6 +14,22 @@ interface Request {
   reason: string;
   status: string;
   createdAt: string;
+  approvedBy?: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    date: string;
+    comment: string;
+  };
+  rejectedBy?: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    date: string;
+    comment: string;
+  };
   user?: {
     _id: string;
     firstName: string;
@@ -26,6 +43,10 @@ const RequestList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
+  
+  // For request details modal
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const fetchRequests = async () => {
     if (!token) return;
@@ -53,8 +74,19 @@ const RequestList: React.FC = () => {
   const handleRequestSubmitted = () => {
     fetchRequests();
   };
+  
+  const handleShowRequestDetails = (request: Request) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+  
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
@@ -145,7 +177,8 @@ const RequestList: React.FC = () => {
               {requests.map((request) => (
                 <tr 
                   key={request._id} 
-                  className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50"
+                  className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50 cursor-pointer"
+                  onClick={() => handleShowRequestDetails(request)}
                 >
                   <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
                     {formatDate(request.createdAt)}
@@ -175,12 +208,104 @@ const RequestList: React.FC = () => {
         </div>
       )}
 
-      {/* Request Modal */}
+      {/* Request Creation Modal */}
       <RequestModal 
         isOpen={isOpen}
         onClose={closeModal}
         onRequestSubmitted={handleRequestSubmitted}
       />
+      
+      {/* Request Detail Modal */}
+      <Modal
+        isOpen={showDetailModal}
+        onClose={closeDetailModal}
+        className="max-w-[600px] p-5 lg:p-8"
+      >
+        {selectedRequest && (
+          <div>
+            <div className="items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Request Details
+              </h3>
+              <span 
+                className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium mt-2 ${getStatusBadgeClass(selectedRequest.status)}`}
+              >
+                {formatStatus(selectedRequest.status)}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Request Type</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatRequestType(selectedRequest.type)}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Submission Date</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatDate(selectedRequest.createdAt)}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Start Time</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.startTime)}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">End Time</h4>
+                <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.endTime)}</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</h4>
+              <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
+            </div>
+            
+            {selectedRequest.status === 'approved' && selectedRequest.approvedBy && (
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Approved Information</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  <span className="font-medium">Approved by:</span> {selectedRequest.approvedBy.user.firstName} {selectedRequest.approvedBy.user.lastName}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Approved on:</span> {formatDateTime(selectedRequest.approvedBy.date)}
+                </p>
+                {selectedRequest.approvedBy.comment && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    <span className="font-medium">Comment:</span> {selectedRequest.approvedBy.comment}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {selectedRequest.status === 'rejected' && selectedRequest.rejectedBy && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Rejection Information</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  <span className="font-medium">Rejected by:</span> {selectedRequest.rejectedBy.user.firstName} {selectedRequest.rejectedBy.user.lastName}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Rejected on:</span> {formatDateTime(selectedRequest.rejectedBy.date)}
+                </p>
+                {selectedRequest.rejectedBy.comment && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    <span className="font-medium">Reason:</span> {selectedRequest.rejectedBy.comment}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={closeDetailModal}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

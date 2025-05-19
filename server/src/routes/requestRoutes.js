@@ -64,4 +64,12 @@ router.put(
   requestController.processRequest
 );
 
+// Cancel request (by user who created it)
+router.put(
+  "/cancel/:requestId",
+  auth,
+  [check("reason", "Cancellation reason is required").notEmpty()],
+  requestController.cancelRequest
+);
+
 module.exports = router;

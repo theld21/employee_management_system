@@ -50,6 +50,7 @@ exports.getUserRequests = async (req, res) => {
     const requests = await Request.find(query)
       .populate("approvedBy.user", "firstName lastName")
       .populate("rejectedBy.user", "firstName lastName")
+      .populate("cancelledBy.user", "firstName lastName")
       .sort({ createdAt: -1 });
 
     res.json(requests);
@@ -171,6 +172,54 @@ exports.processRequest = async (req, res) => {
     res.json(request);
   } catch (error) {
     console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Cancel request by the user who created it
+exports.cancelRequest = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    // Find the request
+    const request = await Request.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    // Check if the request belongs to the user
+    if (request.user.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to cancel this request" });
+    }
+
+    // Check if the request is still pending
+    if (request.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Only pending requests can be cancelled" });
+    }
+
+    // Update request status to cancelled
+    request.status = "cancelled";
+    request.cancelledBy = {
+      user: userId,
+      date: new Date(),
+      reason: reason,
+    };
+
+    await request.save();
+    res.json(request);
+  } catch (error) {
+    console.error("Error cancelling request:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
