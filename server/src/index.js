@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const requestRoutes = require("./routes/requestRoutes");
 const groupRoutes = require("./routes/groupRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // Initialize app
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

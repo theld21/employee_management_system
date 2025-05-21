@@ -6,12 +6,10 @@ import { jwtDecode } from 'jwt-decode'
 const publicPaths = ['/auth/signin', '/auth/signup']
 
 // Define allowed roles
-type AllowedRole = 'admin' | 'level1' | 'level2' | 'level3'
+type AllowedRole = 'admin' | 'user'
 
 // Role-based route configuration
 const roleBasedRoutes = {
-  '/admin': ['admin', 'level1', 'level2'] as AllowedRole[],
-  '/admin/requests': ['admin', 'level1', 'level2'] as AllowedRole[],
 } as const
 
 export function middleware(request: NextRequest) {
