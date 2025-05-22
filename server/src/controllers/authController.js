@@ -82,7 +82,7 @@ exports.login = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid username or password" });
     }
 
     // Check if user is active
@@ -92,8 +92,9 @@ exports.login = async (req, res) => {
 
     // Verify password
     const isMatch = await user.comparePassword(password);
+    console.log(password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Password is incorrect" });
     }
 
     // Generate JWT token
