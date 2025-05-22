@@ -125,7 +125,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </label>
             <input
               id="username"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('username', { 
                 required: 'Username is required',
                 minLength: {
@@ -146,7 +146,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <input
               id="email"
               type="email"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('email', {
                 required: 'Email is required',
                 pattern: {
@@ -167,7 +167,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <input
               id="password"
               type="password"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('password', {
                 required: 'Password is required',
                 minLength: {
@@ -187,7 +187,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </label>
             <input
               id="firstName"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('firstName', { 
                 required: 'First name is required',
                 minLength: {
@@ -207,7 +207,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </label>
             <input
               id="lastName"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('lastName', { 
                 required: 'Last name is required',
                 minLength: {
@@ -227,7 +227,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </label>
             <select
               id="role"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('role')}
             >
               <option value="user">User</option>

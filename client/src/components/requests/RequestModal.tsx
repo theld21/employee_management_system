@@ -174,7 +174,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             name="requestType"
             value={formData.requestType}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
             required
           >
             <option value="work-time">Work Time Update</option>
@@ -193,7 +193,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             name="startDateTime"
             value={formData.startDateTime}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
             required
           />
         </div>
@@ -207,7 +207,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             name="endDateTime"
             value={formData.endDateTime}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
             required
           />
         </div>
@@ -221,7 +221,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             value={formData.reason}
             onChange={handleChange}
             rows={3}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
             placeholder="Please provide a reason for your request..."
             required
           ></textarea>

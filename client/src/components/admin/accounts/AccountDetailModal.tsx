@@ -106,7 +106,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </label>
             <input
               id="username"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('username', { required: 'Username is required' })}
             />
             {errors.username && (
@@ -121,7 +121,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             <input
               id="email"
               type="email"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('email', {
                 required: 'Email is required',
                 pattern: {
@@ -141,7 +141,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </label>
             <select
               id="role"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('role')}
             >
               <option value="user">User</option>
@@ -155,7 +155,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </label>
             <select
               id="status"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
               {...register('status')}
             >
               <option value="active">Active</option>
