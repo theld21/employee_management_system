@@ -4,8 +4,38 @@ const bcrypt = require("bcryptjs");
 // Get all accounts
 exports.getAllAccounts = async (req, res) => {
   try {
-    const accounts = await User.find({}, "-password");
-    res.json(accounts);
+    const { page = 1, limit = 10 } = req.query;
+
+    // Convert page and limit to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Count total documents for pagination info
+    const total = await User.countDocuments({});
+
+    // Get paginated accounts
+    const accounts = await User.find({}, "-password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    console.log(
+      `[PAGINATION INFO] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
+        total / limitNum
+      )}`
+    );
+
+    // Send back pagination info along with results
+    res.json({
+      accounts,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     res
       .status(500)
