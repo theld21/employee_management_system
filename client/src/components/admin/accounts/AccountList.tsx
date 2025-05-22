@@ -37,10 +37,11 @@ export const AccountList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchAccounts = async (page = currentPage, limit = pageSize) => {
+  const fetchAccounts = async (page = currentPage, limit = pageSize, search = searchQuery) => {
     try {
-      const response = await api.get(`/admin/accounts?page=${page}&limit=${limit}`);
+      const response = await api.get(`/admin/accounts?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
       const data = response.data;
       
       if (data && typeof data === 'object' && 'accounts' in data && 'pagination' in data) {
@@ -65,11 +66,24 @@ export const AccountList: React.FC = () => {
     fetchAccounts();
   }, []);
 
+  // Handle search input change
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
+  // Handle search on Enter key press
+  const handleSearchKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      setCurrentPage(1); // Reset to first page when searching
+      fetchAccounts(1, pageSize, searchQuery);
+    }
+  };
+
   // Handle page change
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
-    fetchAccounts(newPage);
+    fetchAccounts(newPage, pageSize, searchQuery);
   };
 
   // Handle page size change
@@ -77,7 +91,7 @@ export const AccountList: React.FC = () => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setCurrentPage(1); // Reset to first page
-    fetchAccounts(1, newSize);
+    fetchAccounts(1, newSize, searchQuery);
   };
 
   const handleDelete = async (id: string) => {
@@ -87,7 +101,7 @@ export const AccountList: React.FC = () => {
 
     try {
       await api.delete(`/admin/accounts/${id}`);
-      fetchAccounts(currentPage, pageSize); // Refresh current page
+      fetchAccounts(currentPage, pageSize, searchQuery); // Refresh current page
     } catch (err) {
       console.error('Error deleting account:', err);
       alert('Failed to delete account');
@@ -127,14 +141,39 @@ export const AccountList: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Accounts</h2>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700"
-          >
-            Create Account
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search accounts..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyPress={handleSearchKeyPress}
+                className="w-64 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <svg
+                className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700"
+            >
+              Create Account
+            </button>
+          </div>
         </div>
       </div>
 
@@ -279,7 +318,7 @@ export const AccountList: React.FC = () => {
       <CreateAccountModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => fetchAccounts(currentPage, pageSize)}
+        onSuccess={() => fetchAccounts(currentPage, pageSize, searchQuery)}
       />
 
       {selectedAccount && (
@@ -287,7 +326,7 @@ export const AccountList: React.FC = () => {
           isOpen={!!selectedAccount}
           onClose={() => setSelectedAccount(null)}
           account={selectedAccount}
-          onUpdate={() => fetchAccounts(currentPage, pageSize)}
+          onUpdate={() => fetchAccounts(currentPage, pageSize, searchQuery)}
         />
       )}
     </div>

@@ -4,18 +4,32 @@ const bcrypt = require("bcryptjs");
 // Get all accounts
 exports.getAllAccounts = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, search = "" } = req.query;
 
     // Convert page and limit to numbers
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
+    // Build search query
+    let query = {};
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query = {
+        $or: [
+          { username: searchRegex },
+          { email: searchRegex },
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+        ],
+      };
+    }
+
     // Count total documents for pagination info
-    const total = await User.countDocuments({});
+    const total = await User.countDocuments(query);
 
     // Get paginated accounts
-    const accounts = await User.find({}, "-password")
+    const accounts = await User.find(query, "-password")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -23,7 +37,7 @@ exports.getAllAccounts = async (req, res) => {
     console.log(
       `[PAGINATION INFO] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
         total / limitNum
-      )}`
+      )}, search: ${search}`
     );
 
     // Send back pagination info along with results
