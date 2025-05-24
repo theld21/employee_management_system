@@ -10,17 +10,13 @@ exports.createGroup = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, description, level, managerId, parentGroupId } = req.body;
+    const { name, description, managerId, parentGroupId } = req.body;
 
-    // Only admin and level1 can create level2 groups
-    // Only admin, level1 and level2 can create level3 groups
-    if (
-      (level === 2 && !["admin", "level1"].includes(req.user.role)) ||
-      (level === 3 && !["admin", "level1", "level2"].includes(req.user.role))
-    ) {
+    // Only admin can create groups
+    if (req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to create this group level" });
+        .json({ message: "Not authorized to create groups" });
     }
 
     // Verify manager exists
@@ -37,20 +33,12 @@ exports.createGroup = async (req, res) => {
       if (!parentGroup) {
         return res.status(404).json({ message: "Parent group not found" });
       }
-
-      // Verify parent group is one level above
-      if (parentGroup.level !== level - 1) {
-        return res
-          .status(400)
-          .json({ message: "Parent group must be one level above this group" });
-      }
     }
 
     // Create group
     const group = new Group({
       name,
       description,
-      level,
       manager: managerId,
       parentGroup: parentGroupId,
     });
@@ -64,15 +52,10 @@ exports.createGroup = async (req, res) => {
       });
     }
 
-    // Update manager's role based on group level
+    // Update manager's group if specified
     if (managerId) {
-      let role;
-      if (level === 1) role = "level1";
-      else if (level === 2) role = "level2";
-
       await User.findByIdAndUpdate(managerId, {
         group: group._id,
-        ...(role && { role }),
       });
     }
 
@@ -83,22 +66,59 @@ exports.createGroup = async (req, res) => {
   }
 };
 
-// Get all groups
+// Get all groups with pagination
 exports.getAllGroups = async (req, res) => {
   try {
-    // Only admin and managers can see all groups
-    if (!["admin", "level1", "level2"].includes(req.user.role)) {
+    // Only admin can see all groups
+    if (req.user.role !== "admin") {
       return res
         .status(403)
         .json({ message: "Not authorized to view all groups" });
     }
 
-    const groups = await Group.find()
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const sortField = req.query.sort || "name";
+    const sortDirection = req.query.direction === "desc" ? -1 : 1;
+    const skip = (page - 1) * limit;
+
+    // Build search query
+    let searchQuery = {};
+    if (search) {
+      searchQuery = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    // Validate sort field
+    const allowedSortFields = ["name", "createdAt", "isActive"];
+    const finalSortField = allowedSortFields.includes(sortField)
+      ? sortField
+      : "name";
+
+    const groups = await Group.find(searchQuery)
       .populate("manager", "firstName lastName username")
       .populate("parentGroup", "name")
-      .sort({ level: 1, name: 1 });
+      .populate("members", "firstName lastName username")
+      .sort({ [finalSortField]: sortDirection })
+      .skip(skip)
+      .limit(limit);
 
-    res.json(groups);
+    const total = await Group.countDocuments(searchQuery);
+
+    res.json({
+      groups,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -112,26 +132,18 @@ exports.getGroupById = async (req, res) => {
 
     const group = await Group.findById(groupId)
       .populate("manager", "firstName lastName username email")
-      .populate("parentGroup", "name level")
-      .populate("childGroups", "name level")
+      .populate("parentGroup", "name")
+      .populate("childGroups", "name")
       .populate("members", "firstName lastName username email");
 
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    // Check authorization
-    const userRole = req.user.role;
-    const userGroup = req.user.group;
-
+    // Check authorization - admin or group manager can view
     if (
-      userRole !== "admin" &&
-      group.level === 1 &&
-      userRole !== "level1" &&
-      group.level === 2 &&
-      !["level1", "level2"].includes(userRole) &&
-      group._id.toString() !== userGroup?.toString() &&
-      group.parentGroup?._id.toString() !== userGroup?.toString()
+      req.user.role !== "admin" &&
+      group.manager?.toString() !== req.user.id
     ) {
       return res
         .status(403)
@@ -154,62 +166,85 @@ exports.updateGroup = async (req, res) => {
     }
 
     const { groupId } = req.params;
-    const { name, description, managerId } = req.body;
+    const { name, description, managerId, parentGroupId } = req.body;
+
+    // Only admin can update groups
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update groups" });
+    }
 
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    // Check authorization
-    if (
-      req.user.role !== "admin" &&
-      group.level === 1 &&
-      req.user.role !== "level1" &&
-      group.level === 2 &&
-      req.user.role !== "level1"
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this group" });
+    // Verify manager exists if provided
+    if (managerId) {
+      const manager = await User.findById(managerId);
+      if (!manager) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+    }
+
+    // Verify parent group exists if provided
+    if (parentGroupId && parentGroupId !== groupId) {
+      const parentGroup = await Group.findById(parentGroupId);
+      if (!parentGroup) {
+        return res.status(404).json({ message: "Parent group not found" });
+      }
+    }
+
+    // Remove from old parent group if changing parent
+    if (group.parentGroup && group.parentGroup.toString() !== parentGroupId) {
+      await Group.findByIdAndUpdate(group.parentGroup, {
+        $pull: { childGroups: groupId },
+      });
     }
 
     // Update group
     group.name = name || group.name;
-    group.description = description || group.description;
+    group.description =
+      description !== undefined ? description : group.description;
 
-    // Handle manager change
-    if (managerId && managerId !== group.manager?.toString()) {
-      // Verify new manager exists
-      const newManager = await User.findById(managerId);
-      if (!newManager) {
-        return res.status(404).json({ message: "Manager not found" });
-      }
-
-      // Update old manager if exists
+    if (managerId !== undefined) {
+      // Remove old manager's group reference
       if (group.manager) {
         await User.findByIdAndUpdate(group.manager, {
-          role: "level3",
-          group: null,
+          $unset: { group: 1 },
         });
       }
+      group.manager = managerId || null;
 
-      // Update new manager
-      let role;
-      if (group.level === 1) role = "level1";
-      else if (group.level === 2) role = "level2";
+      // Set new manager's group reference
+      if (managerId) {
+        await User.findByIdAndUpdate(managerId, {
+          group: groupId,
+        });
+      }
+    }
 
-      await User.findByIdAndUpdate(managerId, {
-        group: group._id,
-        role,
-      });
+    if (parentGroupId !== undefined) {
+      group.parentGroup = parentGroupId || null;
 
-      group.manager = managerId;
+      // Add to new parent group if specified
+      if (parentGroupId) {
+        await Group.findByIdAndUpdate(parentGroupId, {
+          $addToSet: { childGroups: groupId },
+        });
+      }
     }
 
     await group.save();
 
-    res.json(group);
+    // Populate the response
+    const updatedGroup = await Group.findById(groupId)
+      .populate("manager", "firstName lastName username")
+      .populate("parentGroup", "name")
+      .populate("members", "firstName lastName username");
+
+    res.json(updatedGroup);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -227,6 +262,13 @@ exports.addMember = async (req, res) => {
     const { groupId } = req.params;
     const { userId } = req.body;
 
+    // Only admin can add members
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to add members to groups" });
+    }
+
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
@@ -237,35 +279,25 @@ exports.addMember = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check authorization
-    if (
-      req.user.role !== "admin" &&
-      group.level === 1 &&
-      req.user.role !== "level1" &&
-      group.level === 2 &&
-      req.user.role !== "level2" &&
-      group.manager?.toString() !== req.user.id
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to add members to this group" });
-    }
-
     // Check if user is already in the group
     if (group.members.includes(userId)) {
-      return res
-        .status(400)
-        .json({ message: "User is already a member of this group" });
+      return res.status(400).json({ message: "User is already in this group" });
     }
 
-    // Add member to group
+    // Add user to group
     group.members.push(userId);
     await group.save();
 
-    // Update user's group
+    // Update user's group reference
     await User.findByIdAndUpdate(userId, { group: groupId });
 
-    res.json(group);
+    // Return updated group with populated members
+    const updatedGroup = await Group.findById(groupId)
+      .populate("manager", "firstName lastName username")
+      .populate("parentGroup", "name")
+      .populate("members", "firstName lastName username email");
+
+    res.json(updatedGroup);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -277,42 +309,106 @@ exports.removeMember = async (req, res) => {
   try {
     const { groupId, userId } = req.params;
 
+    // Only admin can remove members
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to remove members from groups" });
+    }
+
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    // Check authorization
-    if (
-      req.user.role !== "admin" &&
-      group.level === 1 &&
-      req.user.role !== "level1" &&
-      group.level === 2 &&
-      req.user.role !== "level2" &&
-      group.manager?.toString() !== req.user.id
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to remove members from this group" });
-    }
-
-    // Check if user is the manager
-    if (group.manager && group.manager.toString() === userId) {
-      return res
-        .status(400)
-        .json({ message: "Cannot remove the group manager" });
-    }
-
-    // Remove member from group
+    // Remove user from group
     group.members = group.members.filter(
-      (memberId) => memberId.toString() !== userId
+      (member) => member.toString() !== userId
     );
     await group.save();
 
-    // Update user's group
-    await User.findByIdAndUpdate(userId, { group: null });
+    // Update user's group reference
+    await User.findByIdAndUpdate(userId, { $unset: { group: 1 } });
 
-    res.json({ message: "Member removed successfully" });
+    // Return updated group with populated members
+    const updatedGroup = await Group.findById(groupId)
+      .populate("manager", "firstName lastName username")
+      .populate("parentGroup", "name")
+      .populate("members", "firstName lastName username email");
+
+    res.json(updatedGroup);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Delete group
+exports.deleteGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    // Only admin can delete groups
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete groups" });
+    }
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    // Remove group from parent's childGroups array
+    if (group.parentGroup) {
+      await Group.findByIdAndUpdate(group.parentGroup, {
+        $pull: { childGroups: groupId },
+      });
+    }
+
+    // Update all members to remove group reference
+    await User.updateMany({ group: groupId }, { $unset: { group: 1 } });
+
+    // Delete the group
+    await Group.findByIdAndDelete(groupId);
+
+    res.json({ message: "Group deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all users for adding to groups
+exports.getAllUsers = async (req, res) => {
+  try {
+    // Only admin can see all users
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view all users" });
+    }
+
+    const search = req.query.search || "";
+
+    // Build search query
+    let searchQuery = { isActive: true };
+    if (search) {
+      searchQuery.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const users = await User.find(searchQuery)
+      .select("firstName lastName username email role")
+      .sort({ firstName: 1, lastName: 1 })
+      .limit(100);
+
+    res.json(users);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

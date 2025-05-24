@@ -174,7 +174,7 @@ exports.getTeamAttendance = async (req, res) => {
     const { startDate, endDate, groupId } = req.query;
 
     // Verify the user is a manager
-    if (!["admin", "level1", "level2"].includes(req.user.role)) {
+    if (!["admin", "manager"].includes(req.user.role)) {
       return res
         .status(403)
         .json({ message: "Not authorized to access team attendance" });

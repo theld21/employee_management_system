@@ -5,17 +5,16 @@ const { auth, authorize } = require("../middlewares/auth");
 
 const router = express.Router();
 
+// Get all users for adding to groups
+router.get("/users", auth, authorize("admin"), groupController.getAllUsers);
+
 // Create group
 router.post(
   "/",
   auth,
-  authorize("admin", "level1", "level2"),
+  authorize("admin"),
   [
     check("name", "Name is required").notEmpty(),
-    check("level", "Level must be a number between 1 and 3").isInt({
-      min: 1,
-      max: 3,
-    }),
     check("managerId", "Manager ID must be a valid MongoDB ID")
       .optional()
       .isMongoId(),
@@ -27,12 +26,7 @@ router.post(
 );
 
 // Get all groups
-router.get(
-  "/",
-  auth,
-  authorize("admin", "level1", "level2"),
-  groupController.getAllGroups
-);
+router.get("/", auth, authorize("admin"), groupController.getAllGroups);
 
 // Get group by ID
 router.get("/:groupId", auth, groupController.getGroupById);
@@ -41,7 +35,7 @@ router.get("/:groupId", auth, groupController.getGroupById);
 router.put(
   "/:groupId",
   auth,
-  authorize("admin", "level1"),
+  authorize("admin"),
   [
     check("name", "Name is required").optional().notEmpty(),
     check("managerId", "Manager ID must be a valid MongoDB ID")
@@ -55,7 +49,7 @@ router.put(
 router.post(
   "/:groupId/members",
   auth,
-  authorize("admin", "level1", "level2"),
+  authorize("admin"),
   [check("userId", "User ID is required").isMongoId()],
   groupController.addMember
 );
@@ -64,8 +58,16 @@ router.post(
 router.delete(
   "/:groupId/members/:userId",
   auth,
-  authorize("admin", "level1", "level2"),
+  authorize("admin"),
   groupController.removeMember
+);
+
+// Delete group
+router.delete(
+  "/:groupId",
+  auth,
+  authorize("admin"),
+  groupController.deleteGroup
 );
 
 module.exports = router;

@@ -227,7 +227,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
     }
   };
 
-  if (!user || !['admin', 'manager', 'level1', 'level2'].includes(user.role)) {
+  if (!user || !['admin', 'manager'].includes(user.role)) {
     return (
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="text-center py-8">

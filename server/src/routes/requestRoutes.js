@@ -48,7 +48,7 @@ router.get("/my", auth, requestController.getUserRequests);
 router.get(
   "/pending",
   auth,
-  authorize("admin", "manager", "level1", "level2"),
+  authorize("admin", "manager"),
   requestController.getPendingRequests
 );
 
@@ -56,7 +56,7 @@ router.get(
 router.put(
   "/:requestId",
   auth,
-  authorize("admin", "manager", "level1", "level2"),
+  authorize("admin", "manager"),
   [
     check("action", "Action is required").isIn(["approve", "reject"]),
     check("comment").optional(),

@@ -143,7 +143,7 @@ exports.getPendingRequests = async (req, res) => {
     }
 
     // For managers, get pending requests from their group members
-    if (role === "manager" || role === "level1" || role === "level2") {
+    if (role === "manager") {
       // Find the manager's groups
       const managerGroups = await Group.find({ manager: id });
 
@@ -209,7 +209,7 @@ exports.processRequest = async (req, res) => {
     const userId = req.user.id;
 
     // Verify the user is a manager or admin
-    if (!["admin", "manager", "level1", "level2"].includes(req.user.role)) {
+    if (!["admin", "manager"].includes(req.user.role)) {
       return res
         .status(403)
         .json({ message: "Not authorized to process this request" });
@@ -229,7 +229,7 @@ exports.processRequest = async (req, res) => {
     }
 
     // If the processor is a manager, check if they manage the user
-    if (["manager", "level1", "level2"].includes(req.user.role)) {
+    if (req.user.role === "manager") {
       const userGroups = await Group.find({
         manager: userId,
         members: request.user,

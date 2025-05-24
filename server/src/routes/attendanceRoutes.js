@@ -31,7 +31,7 @@ router.get("/today", auth, attendanceController.getTodayAttendance);
 router.get(
   "/team",
   auth,
-  authorize("admin", "level1", "level2"),
+  authorize("admin", "manager"),
   attendanceController.getTeamAttendance
 );
 

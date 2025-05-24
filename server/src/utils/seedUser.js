@@ -31,7 +31,7 @@ const seedUser = async () => {
       email: "test@example.com",
       username: "testuser",
       password: hashedPassword,
-      role: "level3",
+      role: "employee",
     });
 
     await user.save();

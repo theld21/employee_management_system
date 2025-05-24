@@ -11,11 +11,6 @@ const GroupSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    level: {
-      type: Number,
-      enum: [1, 2, 3],
-      required: true,
-    },
     manager: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

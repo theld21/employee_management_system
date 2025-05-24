@@ -54,13 +54,17 @@ const authorize = (...roles) => {
       return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Forbidden. You do not have permission to access this resource.",
-        });
+    // Convert manager role to user role for compatibility
+    const userRole =
+      req.user.role === "manager" || req.user.role === "employee"
+        ? "user"
+        : req.user.role;
+
+    if (!roles.includes(userRole)) {
+      return res.status(403).json({
+        message:
+          "Forbidden. You do not have permission to access this resource.",
+      });
     }
 
     next();
