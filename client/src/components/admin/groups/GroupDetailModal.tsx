@@ -69,7 +69,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   // All users and groups for editing
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -156,26 +156,28 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     }
   };
 
-  const handleAddMember = async () => {
-    if (!selectedUserId) return;
+  const handleAddMembers = async () => {
+    if (selectedUserIds.length === 0) {
+      setError('Please select at least one member to add');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      await api.post(`/groups/${group._id}/members`, { userId: selectedUserId });
-      setSuccessMessage('Member added successfully');
+      await api.post(`/groups/${group._id}/members`, {
+        memberIds: selectedUserIds
+      });
+
+      setSuccessMessage('Members added successfully');
       onUpdate();
       setShowAddMember(false);
-      setSelectedUserId('');
+      setSelectedUserIds([]);
       setUserSearchQuery('');
-      
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Failed to add member');
+      setError(error.response?.data?.message || 'Failed to add members');
     } finally {
       setLoading(false);
     }
@@ -436,82 +438,87 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
             {/* Add Member Section */}
             {showAddMember && (
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4">
-                <h4 className="font-medium text-gray-900 dark:text-white">Add New Member</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white">Add New Members</h4>
                 
                 <div>
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value);
+                      const query = e.target.value.toLowerCase();
+                      const filtered = availableUsers.filter(user => 
+                        !group.members.some(member => member._id === user._id) &&
+                        (user.firstName.toLowerCase().includes(query) ||
+                         user.lastName.toLowerCase().includes(query) ||
+                         user.username.toLowerCase().includes(query))
+                      );
+                      setFilteredUsers(filtered);
+                    }}
                     className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                   />
                 </div>
 
                 <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded">
                   {filteredUsers.length > 0 ? (
-                    <div className="space-y-1">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
                       {filteredUsers.map((user) => (
                         <div
                           key={user._id}
-                          onClick={() => setSelectedUserId(user._id)}
-                          className={`p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                            selectedUserId === user._id ? 'bg-brand-50 border-brand-200 dark:bg-brand-900/30' : ''
-                          }`}
+                          className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
-                          <div className="flex items-center">
-                            <input
-                              type="radio"
-                              checked={selectedUserId === user._id}
-                              onChange={() => setSelectedUserId(user._id)}
-                              className="mr-3"
-                            />
-                            <div>
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {user.firstName} {user.lastName}
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {user.username} - {user.email}
-                              </div>
+                          <input
+                            type="checkbox"
+                            id={`user-${user._id}`}
+                            checked={selectedUserIds.includes(user._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUserIds([...selectedUserIds, user._id]);
+                              } else {
+                                setSelectedUserIds(selectedUserIds.filter(id => id !== user._id));
+                              }
+                            }}
+                            className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor={`user-${user._id}`}
+                            className="ml-2 flex-1 cursor-pointer"
+                          >
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {user.firstName} {user.lastName}
                             </div>
-                          </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {user.username}
+                            </div>
+                          </label>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      {userSearchQuery ? 'No users found matching your search' : 'No available users to add'}
+                      No users found
                     </div>
                   )}
                 </div>
 
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => {
                       setShowAddMember(false);
-                      setSelectedUserId('');
+                      setSelectedUserIds([]);
                       setUserSearchQuery('');
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={handleAddMember}
-                    disabled={!selectedUserId || loading}
-                    className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 border border-transparent rounded-md shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
+                    onClick={handleAddMembers}
+                    disabled={loading || selectedUserIds.length === 0}
+                    className="px-4 py-2 text-sm font-medium text-white bg-brand-500 border border-transparent rounded-md hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-brand-600 dark:hover:bg-brand-700 disabled:opacity-50"
                   >
-                    {loading ? (
-                      <>
-                        <svg className="w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Adding...
-                      </>
-                    ) : (
-                      'Add Member'
-                    )}
+                    {loading ? 'Adding...' : `Add ${selectedUserIds.length} Member${selectedUserIds.length !== 1 ? 's' : ''}`}
                   </button>
                 </div>
               </div>
