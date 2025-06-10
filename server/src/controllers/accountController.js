@@ -60,7 +60,21 @@ exports.getAllAccounts = async (req, res) => {
 // Create new account
 exports.createAccount = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, role } = req.body;
+    const {
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      employeeId,
+      gender,
+      dateOfBirth,
+      phoneNumber,
+      address,
+      position,
+      department,
+      role,
+    } = req.body;
 
     // Validate required fields
     if (!username || !email || !password || !firstName || !lastName) {
@@ -72,7 +86,9 @@ exports.createAccount = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }, { employeeId }],
+    });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -84,6 +100,13 @@ exports.createAccount = async (req, res) => {
       password,
       firstName,
       lastName,
+      employeeId,
+      gender,
+      dateOfBirth,
+      phoneNumber,
+      address,
+      position,
+      department,
       role: role || "user",
       status: "active",
     });
@@ -108,7 +131,21 @@ exports.createAccount = async (req, res) => {
 exports.updateAccount = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, firstName, lastName, role, status } = req.body;
+    const {
+      username,
+      email,
+      firstName,
+      lastName,
+      employeeId,
+      gender,
+      dateOfBirth,
+      phoneNumber,
+      address,
+      position,
+      department,
+      role,
+      status,
+    } = req.body;
 
     // Check if user exists
     const user = await User.findById(id);
@@ -116,11 +153,26 @@ exports.updateAccount = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Check if employeeId is being changed and if it's already taken
+    if (employeeId && employeeId !== user.employeeId) {
+      const existingUser = await User.findOne({ employeeId });
+      if (existingUser) {
+        return res.status(400).json({ message: "Employee ID already exists" });
+      }
+    }
+
     // Update user fields
     if (username) user.username = username;
     if (email) user.email = email;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (employeeId) user.employeeId = employeeId;
+    if (gender) user.gender = gender;
+    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (address) user.address = address;
+    if (position) user.position = position;
+    if (department) user.department = department;
     if (role) user.role = role;
     if (status) user.status = status;
 
@@ -148,7 +200,7 @@ exports.deleteAccount = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    await user.remove();
+    await User.findByIdAndDelete(id);
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
     res

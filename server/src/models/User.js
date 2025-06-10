@@ -30,6 +30,18 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    employeeId: {
+      type: String,
+      unique: true,
+      trim: true,
+    },
+    gender: {
+      type: Number,
+      enum: [0, 1], // 0: female, 1: male
+    },
+    dateOfBirth: {
+      type: Date,
+    },
     phoneNumber: {
       type: String,
       trim: true,

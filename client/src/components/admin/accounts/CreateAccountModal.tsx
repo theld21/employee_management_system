@@ -12,6 +12,13 @@ interface FormValues {
   password: string;
   firstName: string;
   lastName: string;
+  employeeId: string;
+  gender: number;
+  dateOfBirth: string;
+  phoneNumber: string;
+  address: string;
+  position: string;
+  department: string;
   role: string;
 }
 
@@ -41,6 +48,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       password: '',
       firstName: '',
       lastName: '',
+      employeeId: '',
+      gender: 1,
+      dateOfBirth: '',
+      phoneNumber: '',
+      address: '',
+      position: '',
+      department: '',
       role: 'user',
     },
   });
@@ -57,13 +71,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         password: data.password,
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
+        employeeId: data.employeeId.trim(),
+        gender: data.gender,
+        dateOfBirth: data.dateOfBirth,
+        phoneNumber: data.phoneNumber.trim(),
+        address: data.address,
+        position: data.position.trim(),
+        department: data.department.trim(),
         role: data.role,
       };
 
-      console.log('Sending payload:', payload); // Debug log
+      console.log('Sending payload:', payload);
       
       const response = await api.post('/admin/accounts', payload);
-      console.log('Response:', response); // Debug log
+      console.log('Response:', response);
       
       reset();
       onSuccess();
@@ -87,7 +108,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      className="max-w-xl"
+      className="max-w-2xl"
     >
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -117,122 +138,210 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Username
-            </label>
-            <input
-              id="username"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('username', { 
-                required: 'Username is required',
-                minLength: {
-                  value: 3,
-                  message: 'Username must be at least 3 characters',
-                },
-              })}
-            />
-            {errors.username && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Username
+              </label>
+              <input
+                id="username"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('username', { 
+                  required: 'Username is required',
+                  minLength: {
+                    value: 3,
+                    message: 'Username must be at least 3 characters',
+                  },
+                })}
+              />
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('email', { 
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address',
+                  },
+                })}
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('password', { 
+                  required: 'Password is required',
+                  minLength: {
+                    value: 6,
+                    message: 'Password must be at least 6 characters',
+                  },
+                })}
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Employee ID
+              </label>
+              <input
+                id="employeeId"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('employeeId')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                First Name
+              </label>
+              <input
+                id="firstName"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('firstName', { 
+                  required: 'First name is required',
+                  minLength: {
+                    value: 2,
+                    message: 'First name must be at least 2 characters',
+                  },
+                })}
+              />
+              {errors.firstName && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.firstName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('lastName', { 
+                  required: 'Last name is required',
+                  minLength: {
+                    value: 2,
+                    message: 'Last name must be at least 2 characters',
+                  },
+                })}
+              />
+              {errors.lastName && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lastName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Gender
+              </label>
+              <select
+                id="gender"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('gender')}
+              >
+                <option value={1}>Male</option>
+                <option value={0}>Female</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Date of Birth
+              </label>
+              <input
+                id="dateOfBirth"
+                type="date"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('dateOfBirth')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Phone Number
+              </label>
+              <input
+                id="phoneNumber"
+                type="tel"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('phoneNumber')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="position" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Position
+              </label>
+              <input
+                id="position"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('position')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Department
+              </label>
+              <input
+                id="department"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('department')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Role
+              </label>
+              <select
+                id="role"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('role')}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
-                },
-              })}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('password', {
-                required: 'Password is required',
-                minLength: {
-                  value: 6,
-                  message: 'Password must be at least 6 characters',
-                },
-              })}
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              First Name
-            </label>
-            <input
-              id="firstName"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('firstName', { 
-                required: 'First name is required',
-                minLength: {
-                  value: 2,
-                  message: 'First name must be at least 2 characters',
-                },
-              })}
-            />
-            {errors.firstName && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.firstName.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Last Name
-            </label>
-            <input
-              id="lastName"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('lastName', { 
-                required: 'Last name is required',
-                minLength: {
-                  value: 2,
-                  message: 'Last name must be at least 2 characters',
-                },
-              })}
-            />
-            {errors.lastName && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lastName.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role
-            </label>
-            <select
-              id="role"
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              {...register('role')}
-            >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+          <div className="mt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Address Information</h3>
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Address
+              </label>
+              <textarea
+                id="address"
+                rows={3}
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('address')}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
