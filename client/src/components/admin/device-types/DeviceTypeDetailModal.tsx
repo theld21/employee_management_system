@@ -8,7 +8,6 @@ interface DeviceType {
   _id: string;
   name: string;
   code: string;
-  description?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -34,7 +33,6 @@ export const DeviceTypeDetailModal: React.FC<DeviceTypeDetailModalProps> = ({
   const [editFormData, setEditFormData] = useState({
     name: '',
     code: '',
-    description: '',
     isActive: true
   });
 
@@ -43,7 +41,6 @@ export const DeviceTypeDetailModal: React.FC<DeviceTypeDetailModalProps> = ({
       setEditFormData({
         name: deviceType.name,
         code: deviceType.code,
-        description: deviceType.description || '',
         isActive: deviceType.isActive
       });
       setError(null);
@@ -155,19 +152,6 @@ export const DeviceTypeDetailModal: React.FC<DeviceTypeDetailModalProps> = ({
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description
-            </label>
-            <textarea
-              value={editFormData.description}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-              disabled={loading}
-              rows={3}
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-            />
           </div>
 
           <div className="flex items-center">

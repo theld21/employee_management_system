@@ -15,10 +15,6 @@ const deviceTypeSchema = new mongoose.Schema(
       unique: true,
       uppercase: true,
     },
-    description: {
-      type: String,
-      trim: true,
-    },
     isActive: {
       type: Boolean,
       default: true,

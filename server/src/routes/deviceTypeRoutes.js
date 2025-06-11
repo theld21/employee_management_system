@@ -8,7 +8,6 @@ const { auth } = require("../middlewares/auth");
 const validateDeviceType = [
   check("name").notEmpty().withMessage("Name is required").trim(),
   check("code").notEmpty().withMessage("Code is required").trim().toUpperCase(),
-  check("description").optional().trim(),
 ];
 
 // Get all device types

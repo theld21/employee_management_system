@@ -18,7 +18,6 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    description: '',
     isActive: true
   });
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,6 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
       setFormData({
         name: '',
         code: '',
-        description: '',
         isActive: true
       });
       onSuccess();
@@ -125,20 +123,6 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={loading}
-              rows={3}
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-            />
           </div>
 
           <div className="flex items-center">

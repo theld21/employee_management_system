@@ -45,7 +45,7 @@ exports.createDeviceType = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, code, description } = req.body;
+    const { name, code } = req.body;
 
     // Check if device type with same name or code already exists
     const existingDeviceType = await DeviceType.findOne({
@@ -61,7 +61,6 @@ exports.createDeviceType = async (req, res) => {
     const deviceType = new DeviceType({
       name,
       code: code.toUpperCase(),
-      description,
     });
 
     await deviceType.save();
@@ -81,7 +80,7 @@ exports.updateDeviceType = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, code, description, isActive } = req.body;
+    const { name, code, isActive } = req.body;
 
     const deviceType = await DeviceType.findById(id);
     if (!deviceType) {
@@ -104,7 +103,6 @@ exports.updateDeviceType = async (req, res) => {
 
     deviceType.name = name;
     deviceType.code = code.toUpperCase();
-    deviceType.description = description;
     if (typeof isActive === "boolean") {
       deviceType.isActive = isActive;
     }
