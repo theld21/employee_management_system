@@ -1,6 +1,19 @@
 const DeviceType = require("../models/DeviceType");
 const { validationResult } = require("express-validator");
 
+// Get all device types (simple list for dropdowns)
+exports.getAllDeviceTypes = async (req, res) => {
+  try {
+    const deviceTypes = await DeviceType.find({ isActive: true })
+      .select("_id name code")
+      .sort({ name: 1 });
+    res.json(deviceTypes);
+  } catch (error) {
+    console.error("Error fetching device types:", error);
+    res.status(500).json({ message: "Error fetching device types" });
+  }
+};
+
 // Get all device types with pagination and search
 exports.getDeviceTypes = async (req, res) => {
   try {

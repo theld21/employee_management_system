@@ -10,7 +10,10 @@ const validateDeviceType = [
   check("code").notEmpty().withMessage("Code is required").trim().toUpperCase(),
 ];
 
-// Get all device types
+// Get all device types (simple list)
+router.get("/all", auth, deviceTypeController.getAllDeviceTypes);
+
+// Get all device types (with pagination)
 router.get("/", auth, deviceTypeController.getDeviceTypes);
 
 // Create new device type

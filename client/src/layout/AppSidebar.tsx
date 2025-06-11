@@ -191,6 +191,43 @@ const AppSidebar: React.FC = (): React.ReactElement => {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
+          d="M9 7H15"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 11H15"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 15H12"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2 12C2 7.28 2 4.92 3.46 3.46C4.92 2 7.28 2 12 2C16.72 2 19.08 2 20.54 3.46C22 4.92 22 7.28 22 12C22 16.72 22 19.08 20.54 20.54C19.08 22 16.72 22 12 22C7.28 22 4.92 22 3.46 20.54C2 19.08 2 16.72 2 12Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+      </svg>,
+      name: "Devices",
+      path: "/admin/devices",
+    },
+    {
+      icon: <svg 
+        className="w-5 h-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
           d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"
           stroke="currentColor"
           strokeWidth="1.5"
