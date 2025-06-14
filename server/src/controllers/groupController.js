@@ -14,16 +14,14 @@ exports.createGroup = async (req, res) => {
 
     // Only admin can create groups
     if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to create groups" });
+      return res.status(403).json({ message: "Không có quyền tạo nhóm" });
     }
 
     // Verify manager exists
     if (managerId) {
       const manager = await User.findById(managerId);
       if (!manager) {
-        return res.status(404).json({ message: "Manager not found" });
+        return res.status(404).json({ message: "Quản lý không tồn tại" });
       }
     }
 
@@ -31,7 +29,7 @@ exports.createGroup = async (req, res) => {
     if (parentGroupId) {
       const parentGroup = await Group.findById(parentGroupId);
       if (!parentGroup) {
-        return res.status(404).json({ message: "Parent group not found" });
+        return res.status(404).json({ message: "Nhóm cha không tồn tại" });
       }
     }
 
@@ -62,7 +60,7 @@ exports.createGroup = async (req, res) => {
     res.status(201).json(group);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy nhóm" });
   }
 };
 
@@ -73,7 +71,7 @@ exports.getAllGroups = async (req, res) => {
     if (req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to view all groups" });
+        .json({ message: "Không có quyền xem tất cả nhóm" });
     }
 
     const page = parseInt(req.query.page) || 1;
@@ -121,7 +119,7 @@ exports.getAllGroups = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy nhóm" });
   }
 };
 
@@ -137,7 +135,7 @@ exports.getGroupById = async (req, res) => {
       .populate("members", "firstName lastName username email");
 
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      return res.status(404).json({ message: "Nhóm không tồn tại" });
     }
 
     // Check authorization - admin or group manager can view
@@ -145,15 +143,13 @@ exports.getGroupById = async (req, res) => {
       req.user.role !== "admin" &&
       group.manager?.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to view this group" });
+      return res.status(403).json({ message: "Không có quyền xem nhóm này" });
     }
 
     res.json(group);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy nhóm" });
   }
 };
 
@@ -170,21 +166,19 @@ exports.updateGroup = async (req, res) => {
 
     // Only admin can update groups
     if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update groups" });
+      return res.status(403).json({ message: "Không có quyền cập nhật nhóm" });
     }
 
     const group = await Group.findById(groupId);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      return res.status(404).json({ message: "Nhóm không tồn tại" });
     }
 
     // Verify manager exists if provided
     if (managerId) {
       const manager = await User.findById(managerId);
       if (!manager) {
-        return res.status(404).json({ message: "Manager not found" });
+        return res.status(404).json({ message: "Quản lý không tồn tại" });
       }
     }
 
@@ -192,7 +186,7 @@ exports.updateGroup = async (req, res) => {
     if (parentGroupId && parentGroupId !== groupId) {
       const parentGroup = await Group.findById(parentGroupId);
       if (!parentGroup) {
-        return res.status(404).json({ message: "Parent group not found" });
+        return res.status(404).json({ message: "Nhóm cha không tồn tại" });
       }
     }
 
@@ -247,7 +241,7 @@ exports.updateGroup = async (req, res) => {
     res.json(updatedGroup);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy nhóm" });
   }
 };
 
@@ -258,12 +252,14 @@ exports.addMember = async (req, res) => {
     const { memberIds } = req.body;
 
     if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
-      return res.status(400).json({ message: "Member IDs array is required" });
+      return res
+        .status(400)
+        .json({ message: "Mảng ID thành viên là bắt buộc" });
     }
 
     const group = await Group.findById(groupId);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      return res.status(404).json({ message: "Nhóm không tồn tại" });
     }
 
     // Get existing member IDs
@@ -277,13 +273,15 @@ exports.addMember = async (req, res) => {
     if (newMemberIds.length === 0) {
       return res
         .status(400)
-        .json({ message: "All selected members are already in the group" });
+        .json({ message: "Tất cả thành viên đã có trong nhóm" });
     }
 
     // Verify all users exist
     const users = await User.find({ _id: { $in: newMemberIds } });
     if (users.length !== newMemberIds.length) {
-      return res.status(400).json({ message: "One or more users not found" });
+      return res
+        .status(400)
+        .json({ message: "Một hoặc nhiều người dùng không tồn tại" });
     }
 
     // Add new members
@@ -294,12 +292,12 @@ exports.addMember = async (req, res) => {
     await group.populate("members", "firstName lastName username");
 
     res.json({
-      message: "Members added successfully",
+      message: "Thành viên đã được thêm thành công",
       group,
     });
   } catch (error) {
-    console.error("Error adding members:", error);
-    res.status(500).json({ message: "Error adding members to group" });
+    console.error("Lỗi thêm thành viên vào nhóm:", error);
+    res.status(500).json({ message: "Lỗi thêm thành viên vào nhóm" });
   }
 };
 
@@ -312,12 +310,12 @@ exports.removeMember = async (req, res) => {
     if (req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to remove members from groups" });
+        .json({ message: "Không có quyền xóa thành viên khỏi nhóm" });
     }
 
     const group = await Group.findById(groupId);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      return res.status(404).json({ message: "Nhóm không tồn tại" });
     }
 
     // Remove user from group
@@ -338,7 +336,7 @@ exports.removeMember = async (req, res) => {
     res.json(updatedGroup);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi xóa nhóm" });
   }
 };
 
@@ -349,14 +347,12 @@ exports.deleteGroup = async (req, res) => {
 
     // Only admin can delete groups
     if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete groups" });
+      return res.status(403).json({ message: "Không có quyền xóa nhóm" });
     }
 
     const group = await Group.findById(groupId);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      return res.status(404).json({ message: "Nhóm không tồn tại" });
     }
 
     // Remove group from parent's childGroups array
@@ -372,10 +368,10 @@ exports.deleteGroup = async (req, res) => {
     // Delete the group
     await Group.findByIdAndDelete(groupId);
 
-    res.json({ message: "Group deleted successfully" });
+    res.json({ message: "Nhóm đã được xóa thành công" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy tất cả người dùng" });
   }
 };
 
@@ -386,7 +382,7 @@ exports.getAllUsers = async (req, res) => {
     if (req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to view all users" });
+        .json({ message: "Không có quyền xem tất cả người dùng" });
     }
 
     const search = req.query.search || "";
@@ -410,6 +406,6 @@ exports.getAllUsers = async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi lấy tất cả người dùng" });
   }
 };

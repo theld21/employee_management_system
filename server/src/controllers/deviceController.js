@@ -9,8 +9,8 @@ exports.getAllDevicesSimple = async (req, res) => {
       .sort({ code: 1 });
     res.json(devices);
   } catch (error) {
-    console.error("Error fetching devices:", error);
-    res.status(500).json({ message: "Error fetching devices" });
+    console.error("Lỗi lấy thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy thiết bị" });
   }
 };
 
@@ -55,8 +55,8 @@ exports.getAllDevices = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching devices:", error);
-    res.status(500).json({ message: "Error fetching devices" });
+    console.error("Lỗi lấy thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy thiết bị" });
   }
 };
 
@@ -65,12 +65,12 @@ exports.getDeviceById = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
     if (!device) {
-      return res.status(404).json({ message: "Device not found" });
+      return res.status(404).json({ message: "Thiết bị không tồn tại" });
     }
     res.json(device);
   } catch (error) {
-    console.error("Error fetching device:", error);
-    res.status(500).json({ message: "Error fetching device" });
+    console.error("Lỗi lấy thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy thiết bị" });
   }
 };
 
@@ -80,7 +80,7 @@ exports.createDevice = async (req, res) => {
     const validation = validateDevice(req.body);
     if (!validation.isValid) {
       return res.status(400).json({
-        message: "Validation failed",
+        message: "Lỗi xác thực",
         errors: validation.errors,
       });
     }
@@ -91,7 +91,7 @@ exports.createDevice = async (req, res) => {
     const existingDevice = await Device.findOne({ code, typeCode });
     if (existingDevice) {
       return res.status(400).json({
-        message: "A device with this code already exists for this type",
+        message: "Một thiết bị với mã này đã tồn tại cho loại này",
       });
     }
 
@@ -105,7 +105,7 @@ exports.createDevice = async (req, res) => {
     await device.save();
     res.status(201).json(device);
   } catch (error) {
-    console.error("Error creating device:", error);
+    console.error("Lỗi tạo thiết bị:", error);
     if (error.code === 11000) {
       // Kiểm tra xem lỗi có phải do trùng code không
       const duplicateKey = Object.keys(error.keyPattern)[0];
@@ -125,7 +125,7 @@ exports.updateDevice = async (req, res) => {
     const validation = validateDevice(req.body);
     if (!validation.isValid) {
       return res.status(400).json({
-        message: "Validation failed",
+        message: "Lỗi xác thực",
         errors: validation.errors,
       });
     }
@@ -135,7 +135,7 @@ exports.updateDevice = async (req, res) => {
     // Check if device exists
     const device = await Device.findById(req.params.id);
     if (!device) {
-      return res.status(404).json({ message: "Device not found" });
+      return res.status(404).json({ message: "Thiết bị không tồn tại" });
     }
 
     // Check if another device with same code and typeCode already exists
@@ -146,7 +146,7 @@ exports.updateDevice = async (req, res) => {
     });
     if (existingDevice) {
       return res.status(400).json({
-        message: "A device with this code already exists for this type",
+        message: "Một thiết bị với mã này đã tồn tại cho loại này",
       });
     }
 
@@ -158,13 +158,13 @@ exports.updateDevice = async (req, res) => {
     await device.save();
     res.json(device);
   } catch (error) {
-    console.error("Error updating device:", error);
+    console.error("Lỗi cập nhật thiết bị:", error);
     if (error.code === 11000) {
       return res.status(400).json({
-        message: "A device with this code already exists for this type",
+        message: "Một thiết bị với mã này đã tồn tại cho loại này",
       });
     }
-    res.status(500).json({ message: "Error updating device" });
+    res.status(500).json({ message: "Lỗi cập nhật thiết bị" });
   }
 };
 
@@ -173,13 +173,13 @@ exports.deleteDevice = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
     if (!device) {
-      return res.status(404).json({ message: "Device not found" });
+      return res.status(404).json({ message: "Thiết bị không tồn tại" });
     }
 
     await Device.findByIdAndDelete(req.params.id);
-    res.json({ message: "Device deleted successfully" });
+    res.json({ message: "Thiết bị đã được xóa thành công" });
   } catch (error) {
-    console.error("Error deleting device:", error);
-    res.status(500).json({ message: "Error deleting device" });
+    console.error("Lỗi xóa thiết bị:", error);
+    res.status(500).json({ message: "Lỗi xóa thiết bị" });
   }
 };

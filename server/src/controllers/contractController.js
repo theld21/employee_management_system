@@ -16,9 +16,7 @@ exports.getAllContracts = async (req, res) => {
     const query = {};
 
     if (search) {
-      query.$or = [
-        { note: { $regex: search, $options: "i" } },
-      ];
+      query.$or = [{ note: { $regex: search, $options: "i" } }];
     }
 
     if (type) {
@@ -31,8 +29,8 @@ exports.getAllContracts = async (req, res) => {
 
     const total = await Contract.countDocuments(query);
     const contracts = await Contract.find(query)
-      .populate('device')
-      .populate('user')
+      .populate("device")
+      .populate("user")
       .sort({ [sortField]: sortDirection })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -47,8 +45,8 @@ exports.getAllContracts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching contracts:", error);
-    res.status(500).json({ message: "Error fetching contracts" });
+    console.error("Lỗi lấy hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi lấy hợp đồng" });
   }
 };
 
@@ -68,7 +66,7 @@ exports.getUserContracts = async (req, res) => {
 
     const total = await Contract.countDocuments(query);
     const contracts = await Contract.find(query)
-      .populate('device')
+      .populate("device")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -83,8 +81,8 @@ exports.getUserContracts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching user contracts:", error);
-    res.status(500).json({ message: "Error fetching contracts" });
+    console.error("Lỗi lấy hợp đồng của người dùng:", error);
+    res.status(500).json({ message: "Lỗi lấy hợp đồng" });
   }
 };
 
@@ -92,15 +90,15 @@ exports.getUserContracts = async (req, res) => {
 exports.getContractById = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
     res.json(contract);
   } catch (error) {
-    console.error("Error fetching contract:", error);
-    res.status(500).json({ message: "Error fetching contract" });
+    console.error("Lỗi lấy hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi lấy hợp đồng" });
   }
 };
 
@@ -123,12 +121,12 @@ exports.createContract = async (req, res) => {
       const existingAssignment = await Contract.findOne({
         device: deviceId,
         type: "ASSIGNMENT",
-        status: { $in: ["PENDING", "CONFIRMED"] }
+        status: { $in: ["PENDING", "CONFIRMED"] },
       });
 
       if (existingAssignment) {
-        return res.status(400).json({ 
-          message: "Device is already assigned or pending assignment" 
+        return res.status(400).json({
+          message: "Thiết bị đã được gán hoặc đang chờ gán",
         });
       }
     }
@@ -142,12 +140,12 @@ exports.createContract = async (req, res) => {
 
     await contract.save();
     const populatedContract = await Contract.findById(contract._id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     res.status(201).json(populatedContract);
   } catch (error) {
-    console.error("Error creating contract:", error);
-    res.status(500).json({ message: "Error creating contract" });
+    console.error("Lỗi tạo hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi tạo hợp đồng" });
   }
 };
 
@@ -159,14 +157,14 @@ exports.updateContract = async (req, res) => {
     // Check if contract exists
     const contract = await Contract.findById(req.params.id);
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
 
     // Check if device exists
     if (deviceId && deviceId !== contract.device.toString()) {
       const device = await Device.findById(deviceId);
       if (!device) {
-        return res.status(404).json({ message: "Device not found" });
+        return res.status(404).json({ message: "Thiết bị không tồn tại" });
       }
     }
 
@@ -178,12 +176,12 @@ exports.updateContract = async (req, res) => {
 
     await contract.save();
     const populatedContract = await Contract.findById(contract._id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     res.json(populatedContract);
   } catch (error) {
-    console.error("Error updating contract:", error);
-    res.status(500).json({ message: "Error updating contract" });
+    console.error("Lỗi cập nhật hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi cập nhật hợp đồng" });
   }
 };
 
@@ -192,14 +190,14 @@ exports.deleteContract = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id);
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
 
     await Contract.findByIdAndDelete(req.params.id);
-    res.json({ message: "Contract deleted successfully" });
+    res.json({ message: "Hợp đồng đã được xóa thành công" });
   } catch (error) {
-    console.error("Error deleting contract:", error);
-    res.status(500).json({ message: "Error deleting contract" });
+    console.error("Lỗi xóa hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi xóa hợp đồng" });
   }
 };
 
@@ -208,28 +206,32 @@ exports.confirmContract = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id);
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
 
     // Check if the logged-in user matches the contract's user
     if (contract.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to confirm this contract" });
+      return res
+        .status(403)
+        .json({ message: "Không có quyền xác nhận hợp đồng này" });
     }
 
     if (contract.status !== "PENDING") {
-      return res.status(400).json({ message: "Contract is not in pending status" });
+      return res
+        .status(400)
+        .json({ message: "Hợp đồng không ở trạng thái chờ" });
     }
 
     contract.status = "CONFIRMED";
     await contract.save();
-    
+
     const populatedContract = await Contract.findById(contract._id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     res.json(populatedContract);
   } catch (error) {
-    console.error("Error confirming contract:", error);
-    res.status(500).json({ message: "Error confirming contract" });
+    console.error("Lỗi xác nhận hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi xác nhận hợp đồng" });
   }
 };
 
@@ -238,28 +240,32 @@ exports.rejectContract = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id);
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
 
     // Check if the logged-in user matches the contract's user
     if (contract.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to reject this contract" });
+      return res
+        .status(403)
+        .json({ message: "Không có quyền từ chối hợp đồng này" });
     }
 
     if (contract.status !== "PENDING") {
-      return res.status(400).json({ message: "Contract is not in pending status" });
+      return res
+        .status(400)
+        .json({ message: "Hợp đồng không ở trạng thái chờ" });
     }
 
     contract.status = "REJECTED";
     await contract.save();
-    
+
     const populatedContract = await Contract.findById(contract._id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     res.json(populatedContract);
   } catch (error) {
-    console.error("Error rejecting contract:", error);
-    res.status(500).json({ message: "Error rejecting contract" });
+    console.error("Lỗi từ chối hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi từ chối hợp đồng" });
   }
 };
 
@@ -268,22 +274,24 @@ exports.completeContract = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id);
     if (!contract) {
-      return res.status(404).json({ message: "Contract not found" });
+      return res.status(404).json({ message: "Hợp đồng không tồn tại" });
     }
 
     if (contract.status !== "CONFIRMED") {
-      return res.status(400).json({ message: "Contract is not in confirmed status" });
+      return res
+        .status(400)
+        .json({ message: "Hợp đồng không ở trạng thái đã xác nhận" });
     }
 
     contract.status = "COMPLETED";
     await contract.save();
-    
+
     const populatedContract = await Contract.findById(contract._id)
-      .populate('device')
-      .populate('user');
+      .populate("device")
+      .populate("user");
     res.json(populatedContract);
   } catch (error) {
-    console.error("Error completing contract:", error);
-    res.status(500).json({ message: "Error completing contract" });
+    console.error("Lỗi hoàn thành hợp đồng:", error);
+    res.status(500).json({ message: "Lỗi hoàn thành hợp đồng" });
   }
 };

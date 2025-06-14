@@ -22,7 +22,7 @@ export default function DeviceTypesPage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Device Type Management" />
+      <PageBreadcrumb pageTitle="Quản lý loại thiết bị" />
       <DeviceTypeList />
     </div>
   );

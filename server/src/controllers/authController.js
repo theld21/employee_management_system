@@ -26,7 +26,7 @@ exports.register = async (req, res) => {
     // Check if user already exists
     let user = await User.findOne({ $or: [{ email }, { username }] });
     if (user) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "Tài khoản đã tồn tại" });
     }
 
     // Create new user
@@ -40,7 +40,7 @@ exports.register = async (req, res) => {
       address,
       position,
       department,
-      role: "employee", // Default role
+      role: "employee",
     });
 
     await user.save();
@@ -65,7 +65,7 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 
@@ -82,19 +82,21 @@ exports.login = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(400).json({ message: "Invalid username or password" });
+      return res
+        .status(400)
+        .json({ message: "Tên đăng nhập hoặc mật khẩu không hợp lệ" });
     }
 
     // Check if user is active
     if (!user.isActive) {
-      return res.status(403).json({ message: "Account is deactivated" });
+      return res.status(403).json({ message: "Tài khoản đã bị vô hiệu hóa" });
     }
 
     // Verify password
     const isMatch = await user.comparePassword(password);
     console.log(password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Password is incorrect" });
+      return res.status(400).json({ message: "Mật khẩu không hợp lệ" });
     }
 
     // Generate JWT token
@@ -117,7 +119,7 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 
@@ -126,11 +128,11 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
     }
     res.json(user);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };

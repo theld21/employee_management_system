@@ -38,16 +38,14 @@ exports.checkIn = async (req, res) => {
     });
 
     if (attendance && attendance.checkIn.time) {
-      return res
-        .status(400)
-        .json({ message: "You have already checked in today" });
+      return res.status(400).json({ message: "Bạn đã điểm danh hôm nay" });
     }
 
     // Create new attendance record or update existing
     if (!attendance) {
       attendance = new Attendance({
         user: userId,
-        date: startOfDay, // Sử dụng ngày đầu để đảm bảo nhất quán
+        date: startOfDay,
         checkIn: {
           time: now,
         },
@@ -63,7 +61,7 @@ exports.checkIn = async (req, res) => {
     res.status(201).json(attendance);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 
@@ -89,7 +87,7 @@ exports.checkOut = async (req, res) => {
     });
 
     if (!attendance || !attendance.checkIn.time) {
-      return res.status(400).json({ message: "You need to check in first" });
+      return res.status(400).json({ message: "Bạn cần điểm danh trước" });
     }
 
     if (attendance.checkOut && attendance.checkOut.time) {
@@ -108,7 +106,7 @@ exports.checkOut = async (req, res) => {
     res.json(attendance);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 
@@ -130,7 +128,7 @@ exports.getUserAttendance = async (req, res) => {
       };
 
       console.log(
-        `Query attendance between: ${start.toISOString()} and ${end.toISOString()}`
+        `Tìm kiếm lịch chấm công giữa: ${start.toISOString()} và ${end.toISOString()}`
       );
     }
 
@@ -139,7 +137,7 @@ exports.getUserAttendance = async (req, res) => {
     res.json(attendance);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
   }
 };
 
@@ -150,7 +148,7 @@ exports.getTodayAttendance = async (req, res) => {
     const { startOfDay, endOfDay } = getDayBoundaries();
 
     console.log(
-      `Looking for attendance between: ${startOfDay.toISOString()} and ${endOfDay.toISOString()}`
+      `Tìm kiếm lịch chấm công giữa: ${startOfDay.toISOString()} và ${endOfDay.toISOString()}`
     );
 
     const attendance = await Attendance.findOne({
@@ -161,10 +159,10 @@ exports.getTodayAttendance = async (req, res) => {
       },
     });
 
-    res.json(attendance || { message: "No attendance record for today" });
+    res.json(attendance || { message: "Không có lịch chấm công" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 
@@ -177,7 +175,7 @@ exports.getTeamAttendance = async (req, res) => {
     if (!["admin", "manager"].includes(req.user.role)) {
       return res
         .status(403)
-        .json({ message: "Not authorized to access team attendance" });
+        .json({ message: "Không có quyền truy cập lịch chấm công" });
     }
 
     let query = {};
@@ -198,7 +196,7 @@ exports.getTeamAttendance = async (req, res) => {
       const group = await Group.findById(groupId);
 
       if (!group) {
-        return res.status(404).json({ message: "Group not found" });
+        return res.status(404).json({ message: "Nhóm không tồn tại" });
       }
 
       query.user = { $in: group.members };
@@ -211,7 +209,7 @@ exports.getTeamAttendance = async (req, res) => {
     res.json(attendance);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
 

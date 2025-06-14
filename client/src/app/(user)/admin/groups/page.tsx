@@ -22,7 +22,7 @@ export default function GroupsPage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Group Management" />
+      <PageBreadcrumb pageTitle="Quản lý nhóm" />
       <GroupList />
     </div>
   );

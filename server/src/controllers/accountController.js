@@ -53,7 +53,7 @@ exports.getAllAccounts = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Error fetching accounts", error: error.message });
+      .json({ message: "Lỗi lấy tài khoản", error: error.message });
   }
 };
 
@@ -79,9 +79,8 @@ exports.createAccount = async (req, res) => {
     // Validate required fields
     if (!username || !email || !password || !firstName || !lastName) {
       return res.status(400).json({
-        message: "Missing required fields",
-        error:
-          "Username, email, password, firstName, and lastName are required",
+        message: "Thiếu trường bắt buộc",
+        error: "Username, email, password, firstName, và lastName là bắt buộc",
       });
     }
 
@@ -90,7 +89,7 @@ exports.createAccount = async (req, res) => {
       $or: [{ email }, { username }, { employeeId }],
     });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "Tài khoản đã tồn tại" });
     }
 
     // Create new user
@@ -119,10 +118,10 @@ exports.createAccount = async (req, res) => {
 
     res.status(201).json(userResponse);
   } catch (error) {
-    console.error("Server error creating account:", error);
+    console.error("Lỗi tạo tài khoản:", error);
     res.status(500).json({
-      message: "Error creating account",
-      error: error.message || "Internal server error",
+      message: "Lỗi tạo tài khoản",
+      error: error.message || "Lỗi máy chủ",
     });
   }
 };
@@ -150,14 +149,14 @@ exports.updateAccount = async (req, res) => {
     // Check if user exists
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
     }
 
     // Check if employeeId is being changed and if it's already taken
     if (employeeId && employeeId !== user.employeeId) {
       const existingUser = await User.findOne({ employeeId });
       if (existingUser) {
-        return res.status(400).json({ message: "Employee ID already exists" });
+        return res.status(400).json({ message: "Mã nhân viên đã tồn tại" });
       }
     }
 
@@ -186,7 +185,7 @@ exports.updateAccount = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Error updating account", error: error.message });
+      .json({ message: "Lỗi cập nhật tài khoản", error: error.message });
   }
 };
 
@@ -197,14 +196,14 @@ exports.deleteAccount = async (req, res) => {
 
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
     }
 
     await User.findByIdAndDelete(id);
-    res.json({ message: "Account deleted successfully" });
+    res.json({ message: "Tài khoản đã được xóa thành công" });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Error deleting account", error: error.message });
+      .json({ message: "Lỗi xóa tài khoản", error: error.message });
   }
 };

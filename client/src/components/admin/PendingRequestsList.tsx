@@ -232,7 +232,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            You do not have permission to view this page.
+            Bạn không có quyền xem trang này.
           </p>
         </div>
       </div>
@@ -241,7 +241,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
 
   return (
     <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
-      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">Pending Requests</h3>
+      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">Yêu cầu chờ duyệt</h3>
       
       {successMessage && (
         <div className="mb-4 rounded-lg bg-green-100 px-4 py-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -259,7 +259,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         </div>
       ) : pendingRequests.length === 0 ? (
         <div className="rounded-lg bg-gray-100 px-4 py-8 text-center text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-          There are no pending requests to review.
+          Không có yêu cầu chờ duyệt.
         </div>
       ) : (
         <>
@@ -267,11 +267,11 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">User</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Ngày</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Người dùng</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Loại</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Hành động</th>
                 </tr>
               </thead>
               <tbody>
@@ -295,10 +295,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
                       <div>
-                        <span className="font-medium">From:</span> {formatDateTime(request.startTime)}
+                        <span className="font-medium">Từ:</span> {formatDateTime(request.startTime)}
                         </div>
                         <div>
-                        <span className="font-medium">To:</span> {formatDateTime(request.endTime)}
+                        <span className="font-medium">Đến:</span> {formatDateTime(request.endTime)}
                         </div>
                     </td>
                     <td className="px-4 py-3">
@@ -308,14 +308,14 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                           disabled={processingRequest === request._id}
                           className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
                         >
-                          Approve
+                          Duyệt
                         </button>
                         <button
                           onClick={(e) => handleOpenModal(request._id, 'reject', e)}
                           disabled={processingRequest === request._id}
                           className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
                         >
-                          Reject
+                          Từ chối
                         </button>
                       </div>
                     </td>
@@ -329,7 +329,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <label htmlFor="page-size" className="text-sm text-gray-500 dark:text-gray-400">
-                Show:
+                Hiển thị:
               </label>
               <select
                 id="page-size"
@@ -342,7 +342,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 <option value="20">20</option>
               </select>
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                of {totalItems} items
+                của {totalItems} mục
               </span>
             </div>
 
@@ -352,7 +352,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 disabled={currentPage === 1}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">First Page</span>
+                <span className="sr-only">Trang đầu</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="11 17 6 12 11 7"></polyline>
                   <polyline points="18 17 13 12 18 7"></polyline>
@@ -363,14 +363,14 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 disabled={currentPage === 1}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Previous Page</span>
+                <span className="sr-only">Trang trước</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </button>
               
               <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
-                Page {currentPage} of {totalPages}
+                Trang {currentPage} của {totalPages}
               </span>
               
               <button
@@ -378,7 +378,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 disabled={currentPage === totalPages}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Next Page</span>
+                <span className="sr-only">Trang tiếp</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -388,7 +388,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 disabled={currentPage === totalPages}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Last Page</span>
+                <span className="sr-only">Trang cuối</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="13 17 18 12 13 7"></polyline>
                   <polyline points="6 17 11 12 6 7"></polyline>
@@ -406,7 +406,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         className="max-w-[500px] p-5 lg:p-8"
       >
         <h4 className="mb-4 text-lg font-medium text-gray-800 dark:text-white/90">
-          {currentAction === 'approve' ? 'Approve Request' : 'Reject Request'}
+          {currentAction === 'approve' ? 'Duyệt yêu cầu' : 'Từ chối yêu cầu'}
         </h4>
         
         {modalError && (
@@ -417,13 +417,13 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Comment (Optional)
+            Ghi chú (Tùy chọn)
           </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
-            placeholder={`Add a comment about why you're ${currentAction === 'approve' ? 'approving' : 'rejecting'} this request...`}
+            placeholder={`Thêm ghi chú về lý do ${currentAction === 'approve' ? 'duyệt' : 'từ chối'} yêu cầu...`}
             rows={3}
           ></textarea>
         </div>
@@ -433,7 +433,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 onClick={handleCloseModal}
             className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 onClick={handleProcessRequest}
@@ -445,10 +445,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
             } disabled:opacity-70`}
           >
             {processingRequest 
-              ? 'Processing...' 
+              ? 'Đang xử lý...' 
               : currentAction === 'approve' 
-                ? 'Approve' 
-                : 'Reject'
+                ? 'Duyệt' 
+                : 'Từ chối'
             }
               </button>
         </div>
@@ -463,22 +463,22 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         {selectedRequest && (
           <div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Request Details
+              Chi tiết yêu cầu
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Request Type</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Loại yêu cầu</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatRequestType(selectedRequest.type)}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Submission Date</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Ngày gửi</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatDate(selectedRequest.createdAt)}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Người gửi</h4>
                 <p className="text-gray-800 dark:text-gray-300">
                   {selectedRequest.user.firstName} {selectedRequest.user.lastName}
                 </p>
@@ -486,25 +486,25 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h4>
-                <p className="text-gray-800 dark:text-gray-300">Pending</p>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trạng thái</h4>
+                <p className="text-gray-800 dark:text-gray-300">Chờ duyệt</p>
               </div>
             </div>
             
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</h4>
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian</h4>
               <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-gray-800 dark:text-gray-300">
-                  <span className="font-medium">From:</span> {formatDateTime(selectedRequest.startTime)}
+                  <span className="font-medium">Từ:</span> {formatDateTime(selectedRequest.startTime)}
                 </p>
                 <p className="text-gray-800 dark:text-gray-300">
-                  <span className="font-medium">To:</span> {formatDateTime(selectedRequest.endTime)}
+                  <span className="font-medium">Đến:</span> {formatDateTime(selectedRequest.endTime)}
                 </p>
           </div>
         </div>
             
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</h4>
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lý do</h4>
               <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
             </div>
             
@@ -513,19 +513,19 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 onClick={closeDetailModal}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
             >
-              Close
+              Đóng
             </button>
               <button
                 onClick={handleRejectFromDetails}
                 className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600"
               >
-                Reject
+                Từ chối
               </button>
               <button
                 onClick={handleApproveFromDetails}
                 className="px-4 py-2 rounded-lg bg-green-500 text-sm font-medium text-white hover:bg-green-600"
               >
-                Approve
+                Duyệt
               </button>
           </div>
         </div>

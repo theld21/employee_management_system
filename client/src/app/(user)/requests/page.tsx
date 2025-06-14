@@ -10,14 +10,14 @@ const RequestsPage = () => {
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Please login to access this page</p>
+        <p>Vui lòng đăng nhập để truy cập trang này</p>
       </div>
     );
   }
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Requests Management" />
+      <PageBreadcrumb pageTitle="Quản lý yêu cầu" />
       <RequestList />
     </div>
   );

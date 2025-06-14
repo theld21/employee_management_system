@@ -209,7 +209,7 @@ const RequestList: React.FC = () => {
     
     // Đảm bảo chỉ request ở trạng thái pending mới có thể bị hủy
     if (selectedRequest.status !== RequestStatus.PENDING) {
-      setCancelError('Only pending requests can be cancelled');
+      setCancelError('Chỉ yêu cầu đang chờ mới có thể bị hủy');
       return;
     }
     
@@ -219,7 +219,7 @@ const RequestList: React.FC = () => {
     try {
       // Use the original cancel endpoint with a default reason
       await api.put(`/requests/cancel/${selectedRequest._id}`, {
-        reason: "Request cancelled by user"
+        reason: "Yêu cầu đã bị hủy bởi người dùng"
       });
       
       // Đóng modal chi tiết request
@@ -244,12 +244,12 @@ const RequestList: React.FC = () => {
   return (
     <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
       <div className="mb-5 flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">My Requests</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Yêu cầu của tôi</h3>
         <button
           onClick={handleCreateRequest}
           className="px-4 py-2.5 rounded-lg bg-blue-500 text-sm font-medium text-white hover:bg-blue-600 focus:ring-4 focus:ring-blue-300/30"
         >
-          Create Request
+          Tạo yêu cầu
         </button>
       </div>
       
@@ -263,7 +263,7 @@ const RequestList: React.FC = () => {
         </div>
       ) : requests.length === 0 ? (
         <div className="rounded-lg bg-gray-100 px-4 py-8 text-center text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-          You don&apos;t have any requests.
+          Bạn không có yêu cầu nào.
         </div>
       ) : (
         <>
@@ -271,10 +271,10 @@ const RequestList: React.FC = () => {
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Time Period</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Ngày</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Loại</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +315,7 @@ const RequestList: React.FC = () => {
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <label htmlFor="page-size" className="text-sm text-gray-500 dark:text-gray-400">
-                Show:
+                Hiển thị:
               </label>
               <select
                 id="page-size"
@@ -328,7 +328,7 @@ const RequestList: React.FC = () => {
                 <option value="20">20</option>
               </select>
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                of {totalItems} items
+                của {totalItems} mục
               </span>
             </div>
 
@@ -338,7 +338,7 @@ const RequestList: React.FC = () => {
                 disabled={currentPage === 1}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">First Page</span>
+                <span className="sr-only">Trang đầu</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="11 17 6 12 11 7"></polyline>
                   <polyline points="18 17 13 12 18 7"></polyline>
@@ -349,14 +349,14 @@ const RequestList: React.FC = () => {
                 disabled={currentPage === 1}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Previous Page</span>
+                <span className="sr-only">Trang trước</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </button>
               
               <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
-                Page {currentPage} of {totalPages}
+                Trang {currentPage} của {totalPages}
               </span>
               
               <button
@@ -364,7 +364,7 @@ const RequestList: React.FC = () => {
                 disabled={currentPage === totalPages}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Next Page</span>
+                <span className="sr-only">Trang tiếp</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -374,7 +374,7 @@ const RequestList: React.FC = () => {
                 disabled={currentPage === totalPages}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
               >
-                <span className="sr-only">Last Page</span>
+                <span className="sr-only">Trang cuối</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="13 17 18 12 13 7"></polyline>
                   <polyline points="6 17 11 12 6 7"></polyline>
@@ -402,7 +402,7 @@ const RequestList: React.FC = () => {
           <div>
             <div className="items-center mb-4">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Request Details
+                Chi tiết yêu cầu
               </h3>
               <span 
                 className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium mt-2 ${getStatusBadgeClass(selectedRequest.status)}`}
@@ -413,43 +413,43 @@ const RequestList: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Request Type</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Loại yêu cầu</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatRequestType(selectedRequest.type)}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Submission Date</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Ngày gửi</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatDate(selectedRequest.createdAt)}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Start Time</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian bắt đầu</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.startTime)}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">End Time</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian kết thúc</h4>
                 <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.endTime)}</p>
               </div>
             </div>
             
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</h4>
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lý do</h4>
               <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
             </div>
             
             {selectedRequest.status === RequestStatus.APPROVED && selectedRequest.approvedBy && (
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Approved Information</h4>
+                <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Thông tin phê duyệt</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Approved by:</span> {selectedRequest.approvedBy.user.firstName} {selectedRequest.approvedBy.user.lastName}
+                  <span className="font-medium">Phê duyệt bởi:</span> {selectedRequest.approvedBy.user.firstName} {selectedRequest.approvedBy.user.lastName}
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Approved on:</span> {formatDateTime(selectedRequest.approvedBy.date)}
+                  <span className="font-medium">Phê duyệt vào:</span> {formatDateTime(selectedRequest.approvedBy.date)}
                 </p>
                 {selectedRequest.approvedBy.comment && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Comment:</span> {selectedRequest.approvedBy.comment}
+                    <span className="font-medium">Ghi chú:</span> {selectedRequest.approvedBy.comment}
                   </p>
                 )}
               </div>
@@ -457,16 +457,16 @@ const RequestList: React.FC = () => {
             
             {selectedRequest.status === RequestStatus.REJECTED && selectedRequest.rejectedBy && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Rejection Information</h4>
+                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Thông tin từ chối</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Rejected by:</span> {selectedRequest.rejectedBy.user.firstName} {selectedRequest.rejectedBy.user.lastName}
+                  <span className="font-medium">Từ chối bởi:</span> {selectedRequest.rejectedBy.user.firstName} {selectedRequest.rejectedBy.user.lastName}
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Rejected on:</span> {formatDateTime(selectedRequest.rejectedBy.date)}
+                  <span className="font-medium">Từ chối vào:</span> {formatDateTime(selectedRequest.rejectedBy.date)}
                 </p>
                 {selectedRequest.rejectedBy.comment && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Reason:</span> {selectedRequest.rejectedBy.comment}
+                    <span className="font-medium">Lý do:</span> {selectedRequest.rejectedBy.comment}
                   </p>
                 )}
               </div>
@@ -474,20 +474,20 @@ const RequestList: React.FC = () => {
             
             {selectedRequest.status === RequestStatus.CANCELLED && selectedRequest.cancelledBy && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Cancellation Information</h4>
+                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Thông tin hủy</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Cancelled by:</span> {
+                  <span className="font-medium">Hủy bởi:</span> {
                     selectedRequest.cancelledBy.user && selectedRequest.cancelledBy.user.firstName 
                     ? `${selectedRequest.cancelledBy.user.firstName} ${selectedRequest.cancelledBy.user.lastName}`
                     : 'You'
                   }
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Cancelled on:</span> {formatDateTime(selectedRequest.cancelledBy.date)}
+                  <span className="font-medium">Hủy vào:</span> {formatDateTime(selectedRequest.cancelledBy.date)}
                 </p>
                 {selectedRequest.cancelledBy.reason && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Reason:</span> {selectedRequest.cancelledBy.reason}
+                    <span className="font-medium">Lý do:</span> {selectedRequest.cancelledBy.reason}
                   </p>
                 )}
               </div>
@@ -500,7 +500,7 @@ const RequestList: React.FC = () => {
                   onClick={() => setShowCancelConfirm(true)}
                   className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30"
                 >
-                  Cancel Request
+                  Hủy yêu cầu
                 </button>
               </div>
             )}
@@ -510,7 +510,7 @@ const RequestList: React.FC = () => {
               <div className="mt-6">
                 <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                    Are you sure you want to cancel this request? This action cannot be undone.
+                    Bạn có chắc chắn muốn hủy yêu cầu này? Hành động này không thể được hoàn tác.
                   </p>
                 </div>
                 
@@ -526,14 +526,14 @@ const RequestList: React.FC = () => {
                     className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
                     disabled={cancelLoading}
                   >
-                    No, Keep Request
+                    Không, giữ yêu cầu
                   </button>
                   <button
                     onClick={handleCancelRequest}
                     className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30 disabled:opacity-70 disabled:cursor-not-allowed"
                     disabled={cancelLoading}
                   >
-                    {cancelLoading ? 'Cancelling...' : 'Yes, Cancel Request'}
+                    {cancelLoading ? 'Đang hủy...' : 'Có, hủy yêu cầu'}
                   </button>
                 </div>
               </div>

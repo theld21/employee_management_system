@@ -89,12 +89,12 @@ export const DeviceTypeList: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Device Types</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Loại thiết bị</h1>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
         >
-          Add Device Type
+          Thêm loại thiết bị
         </button>
       </div>
 
@@ -102,7 +102,7 @@ export const DeviceTypeList: React.FC = () => {
         <div className="flex-1 max-w-sm">
           <input
             type="text"
-            placeholder="Search device types..."
+            placeholder="Tìm kiếm loại thiết bị..."
             value={searchQuery}
             onChange={handleSearch}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -136,10 +136,10 @@ export const DeviceTypeList: React.FC = () => {
                   Code {sortField === 'code' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
+                  Trạng thái
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
+                  Hành động
                 </th>
               </tr>
             </thead>
@@ -158,7 +158,7 @@ export const DeviceTypeList: React.FC = () => {
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                     }`}>
-                      {deviceType.isActive ? 'Active' : 'Inactive'}
+                      {deviceType.isActive ? 'Hoạt động' : 'Không hoạt động'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -166,13 +166,13 @@ export const DeviceTypeList: React.FC = () => {
                       onClick={() => handleEdit(deviceType)}
                       className="text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 mr-4"
                     >
-                      Edit
+                      Sửa
                     </button>
                     <button
                       onClick={() => handleDelete(deviceType._id)}
                       className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
                     >
-                      Delete
+                      Xóa
                     </button>
                   </td>
                 </tr>
@@ -189,7 +189,7 @@ export const DeviceTypeList: React.FC = () => {
           disabled={page === 1}
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
         >
-          Previous
+          Trước
         </button>
         <span className="text-sm text-gray-700 dark:text-gray-300">
           Page {page} of {totalPages}
@@ -199,7 +199,7 @@ export const DeviceTypeList: React.FC = () => {
           disabled={page === totalPages}
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
         >
-          Next
+          Tiếp
         </button>
       </div>
 

@@ -229,7 +229,7 @@ const AttendanceCalendar = () => {
       {/* Calendar with attendance actions */}
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Attendance Calendar</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch chấm công</h3>
           
           {loading ? (
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -261,7 +261,7 @@ const AttendanceCalendar = () => {
                   disabled={checkInLoading}
                   className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white"
                 >
-                  {checkInLoading ? "Checking in..." : "Check In"}
+                  {checkInLoading ? "Đang điểm danh..." : "Điểm danh"}
                 </button>
               )}
               
@@ -271,7 +271,7 @@ const AttendanceCalendar = () => {
                   disabled={checkOutLoading}
                   className="rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
                 >
-                  {checkOutLoading ? "Checking out..." : "Check Out"}
+                  {checkOutLoading ? "Đang kết thúc..." : "Kết thúc"}
                 </button>
               )}
               

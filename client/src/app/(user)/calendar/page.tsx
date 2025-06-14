@@ -4,14 +4,14 @@ import { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Attendance Calendar",
-  description: "View your monthly attendance records and check-in/check-out history",
+  title: "Chấm công",
+  description: "Xem lịch chấm công của bạn và lịch sử điểm danh",
 };
 
 export default function CalendarPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Attendance Calendar" />
+      <PageBreadcrumb pageTitle="Chấm công" />
       <AttendanceCalendar />
     </div>
   );

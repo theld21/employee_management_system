@@ -9,8 +9,8 @@ exports.getAllDeviceTypes = async (req, res) => {
       .sort({ name: 1 });
     res.json(deviceTypes);
   } catch (error) {
-    console.error("Error fetching device types:", error);
-    res.status(500).json({ message: "Error fetching device types" });
+    console.error("Lỗi lấy loại thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy loại thiết bị" });
   }
 };
 
@@ -45,8 +45,8 @@ exports.getDeviceTypes = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching device types:", error);
-    res.status(500).json({ message: "Error fetching device types" });
+    console.error("Lỗi lấy loại thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy loại thiết bị" });
   }
 };
 
@@ -67,7 +67,7 @@ exports.createDeviceType = async (req, res) => {
 
     if (existingDeviceType) {
       return res.status(400).json({
-        message: "Device type with this name or code already exists",
+        message: "Loại thiết bị với tên hoặc mã này đã tồn tại",
       });
     }
 
@@ -79,8 +79,8 @@ exports.createDeviceType = async (req, res) => {
     await deviceType.save();
     res.status(201).json(deviceType);
   } catch (error) {
-    console.error("Error creating device type:", error);
-    res.status(500).json({ message: "Error creating device type" });
+    console.error("Lỗi tạo loại thiết bị:", error);
+    res.status(500).json({ message: "Lỗi tạo loại thiết bị" });
   }
 };
 
@@ -97,7 +97,7 @@ exports.updateDeviceType = async (req, res) => {
 
     const deviceType = await DeviceType.findById(id);
     if (!deviceType) {
-      return res.status(404).json({ message: "Device type not found" });
+      return res.status(404).json({ message: "Loại thiết bị không tồn tại" });
     }
 
     // Check if new name or code conflicts with existing device types
@@ -109,7 +109,7 @@ exports.updateDeviceType = async (req, res) => {
 
       if (existingDeviceType) {
         return res.status(400).json({
-          message: "Device type with this name or code already exists",
+          message: "Loại thiết bị với tên hoặc mã này đã tồn tại",
         });
       }
     }
@@ -123,8 +123,8 @@ exports.updateDeviceType = async (req, res) => {
     await deviceType.save();
     res.json(deviceType);
   } catch (error) {
-    console.error("Error updating device type:", error);
-    res.status(500).json({ message: "Error updating device type" });
+    console.error("Lỗi cập nhật loại thiết bị:", error);
+    res.status(500).json({ message: "Lỗi cập nhật loại thiết bị" });
   }
 };
 
@@ -135,13 +135,13 @@ exports.deleteDeviceType = async (req, res) => {
 
     const deviceType = await DeviceType.findById(id);
     if (!deviceType) {
-      return res.status(404).json({ message: "Device type not found" });
+      return res.status(404).json({ message: "Loại thiết bị không tồn tại" });
     }
 
     await deviceType.deleteOne();
-    res.json({ message: "Device type deleted successfully" });
+    res.json({ message: "Loại thiết bị đã được xóa thành công" });
   } catch (error) {
-    console.error("Error deleting device type:", error);
-    res.status(500).json({ message: "Error deleting device type" });
+    console.error("Lỗi xóa loại thiết bị:", error);
+    res.status(500).json({ message: "Lỗi xóa loại thiết bị" });
   }
 };

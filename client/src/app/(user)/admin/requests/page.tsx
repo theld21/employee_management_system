@@ -12,7 +12,7 @@ const AdminRequestsPage = () => {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Manage Requests" />
+      <PageBreadcrumb pageTitle="Quản lý yêu cầu" />
         <PendingRequestsList 
           requestsUpdated={requestsUpdated} 
           onRequestProcessed={handleRequestProcessed}
