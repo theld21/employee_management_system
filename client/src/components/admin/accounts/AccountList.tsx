@@ -138,7 +138,7 @@ export const AccountList: React.FC = () => {
   if (error) {
     return (
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:border-red-700 dark:text-red-300" role="alert">
-        <strong className="font-bold">Error: </strong>
+        <strong className="font-bold">Lỗi: </strong>
         <span className="block sm:inline">{error}</span>
       </div>
     );
@@ -148,12 +148,12 @@ export const AccountList: React.FC = () => {
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Accounts</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Tài khoản</h2>
           <div className="flex items-center gap-4">
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search accounts..."
+                placeholder="Tìm kiếm tài khoản..."
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyPress={handleSearchKeyPress}
@@ -177,7 +177,7 @@ export const AccountList: React.FC = () => {
               onClick={() => setIsCreateModalOpen(true)}
               className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700"
             >
-              Create Account
+              Tạo tài khoản
             </button>
           </div>
         </div>
@@ -188,31 +188,31 @@ export const AccountList: React.FC = () => {
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Employee ID
+                Mã nhân viên
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Name
+                Tên
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Phone
+                Số điện thoại
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Position
+                Chức vụ
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Department
+                Phòng ban
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Role
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Status
+                Trạng thái
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Actions
+                Hành động
               </th>
             </tr>
           </thead>
@@ -250,14 +250,14 @@ export const AccountList: React.FC = () => {
                     onClick={() => setSelectedAccount(account)}
                     className="text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 mr-4"
                   >
-                    Edit
+                    Sửa
                   </button>
                   {user?._id !== account._id && (
                     <button
                       onClick={() => handleDelete(account._id)}
                       className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
                     >
-                      Delete
+                      Xóa
                     </button>
                   )}
                 </td>
@@ -271,7 +271,7 @@ export const AccountList: React.FC = () => {
       <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-6 pb-6">
         <div className="flex items-center space-x-2">
           <label htmlFor="page-size" className="text-sm text-gray-500 dark:text-gray-400">
-            Show:
+            Hiển thị:
           </label>
           <select
             id="page-size"
@@ -284,7 +284,7 @@ export const AccountList: React.FC = () => {
             <option value="20">20</option>
           </select>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            of {totalItems} items
+            trên {totalItems} mục
           </span>
         </div>
 
@@ -294,7 +294,7 @@ export const AccountList: React.FC = () => {
             disabled={currentPage === 1}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
           >
-            <span className="sr-only">First Page</span>
+            <span className="sr-only">Trang đầu</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="11 17 6 12 11 7"></polyline>
               <polyline points="18 17 13 12 18 7"></polyline>
@@ -305,14 +305,14 @@ export const AccountList: React.FC = () => {
             disabled={currentPage === 1}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
           >
-            <span className="sr-only">Previous Page</span>
+            <span className="sr-only">Trang trước</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
           
           <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
-            Page {currentPage} of {totalPages}
+            Trang {currentPage} trên {totalPages}
           </span>
           
           <button
@@ -320,7 +320,7 @@ export const AccountList: React.FC = () => {
             disabled={currentPage === totalPages}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
           >
-            <span className="sr-only">Next Page</span>
+            <span className="sr-only">Trang tiếp</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
@@ -330,7 +330,7 @@ export const AccountList: React.FC = () => {
             disabled={currentPage === totalPages}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
           >
-            <span className="sr-only">Last Page</span>
+            <span className="sr-only">Trang cuối</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="13 17 18 12 13 7"></polyline>
               <polyline points="6 17 11 12 6 7"></polyline>

@@ -112,12 +112,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     >
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Account</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Tạo tài khoản mới</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
           >
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Đóng</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -143,16 +143,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Username
+                Tên đăng nhập
               </label>
               <input
                 id="username"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('username', { 
-                  required: 'Username is required',
+                  required: 'Tên đăng nhập là bắt buộc',
                   minLength: {
                     value: 3,
-                    message: 'Username must be at least 3 characters',
+                    message: 'Tên đăng nhập phải có ít nhất 3 ký tự',
                   },
                 })}
               />
@@ -163,17 +163,17 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
+                Email:
               </label>
               <input
                 id="email"
                 type="email"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('email', { 
-                  required: 'Email is required',
+                  required: 'Email là bắt buộc',
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+                    message: 'Email không hợp lệ',
                   },
                 })}
               />
@@ -184,17 +184,17 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
+                Mật khẩu
               </label>
               <input
                 id="password"
                 type="password"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('password', { 
-                  required: 'Password is required',
+                  required: 'Mật khẩu là bắt buộc',
                   minLength: {
                     value: 6,
-                    message: 'Password must be at least 6 characters',
+                    message: 'Mật khẩu phải có ít nhất 6 ký tự',
                   },
                 })}
               />
@@ -205,7 +205,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Employee ID
+                Mã nhân viên
               </label>
               <input
                 id="employeeId"
@@ -216,16 +216,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                First Name
+                Tên
               </label>
               <input
                 id="firstName"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('firstName', { 
-                  required: 'First name is required',
+                  required: 'Tên là bắt buộc',
                   minLength: {
                     value: 2,
-                    message: 'First name must be at least 2 characters',
+                    message: 'Tên phải có ít nhất 2 ký tự',
                   },
                 })}
               />
@@ -236,16 +236,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Last Name
+                Họ
               </label>
               <input
                 id="lastName"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('lastName', { 
-                  required: 'Last name is required',
+                  required: 'Họ là bắt buộc',
                   minLength: {
                     value: 2,
-                    message: 'Last name must be at least 2 characters',
+                    message: 'Họ phải có ít nhất 2 ký tự',
                   },
                 })}
               />
@@ -256,21 +256,21 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Gender
+                Giới tính
               </label>
               <select
                 id="gender"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 {...register('gender')}
               >
-                <option value={1}>Male</option>
-                <option value={0}>Female</option>
+                <option value={1}>Nam</option>
+                <option value={0}>Nữ</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Date of Birth
+                Ngày sinh
               </label>
               <input
                 id="dateOfBirth"
@@ -282,7 +282,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone Number
+                Số điện thoại
               </label>
               <input
                 id="phoneNumber"
@@ -294,7 +294,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="position" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Position
+                Chức vụ
               </label>
               <input
                 id="position"
@@ -305,7 +305,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Department
+                Phòng ban
               </label>
               <input
                 id="department"
@@ -316,7 +316,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Role
+                Quyền
               </label>
               <select
                 id="role"
@@ -330,10 +330,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
 
           <div className="mt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Address Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Thông tin địa chỉ</h3>
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Address
+                Địa chỉ
               </label>
               <textarea
                 id="address"
@@ -350,7 +350,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
             >
-              Cancel
+              Hủy
             </button>
             <button 
               type="submit"
@@ -363,10 +363,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Creating...
+                  Đang tạo...
                 </>
               ) : (
-                'Create Account'
+                'Tạo tài khoản'
               )}
             </button>
           </div>

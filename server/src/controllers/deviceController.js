@@ -1,6 +1,19 @@
 const Device = require("../models/Device");
 const { validateDevice } = require("../validators/deviceValidator");
 
+// Get all devices without pagination (for dropdowns)
+exports.getAllDevicesSimple = async (req, res) => {
+  try {
+    const devices = await Device.find()
+      .select("_id code typeCode description")
+      .sort({ code: 1 });
+    res.json(devices);
+  } catch (error) {
+    console.error("Error fetching devices:", error);
+    res.status(500).json({ message: "Error fetching devices" });
+  }
+};
+
 // Get all devices with pagination, search, and filtering
 exports.getAllDevices = async (req, res) => {
   try {

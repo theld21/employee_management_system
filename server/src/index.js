@@ -11,6 +11,7 @@ const groupRoutes = require("./routes/groupRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const deviceTypeRoutes = require("./routes/deviceTypeRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
+const contractRoutes = require("./routes/contractRoutes");
 
 // Initialize app
 const app = express();
@@ -70,6 +71,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/device-types", deviceTypeRoutes);
 app.use("/api/devices", deviceRoutes);
+app.use("/api/contracts", contractRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

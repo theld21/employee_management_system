@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { AccountList } from '@/components/admin/accounts/AccountList';
+import { ContractList } from '@/components/admin/contracts/ContractList';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 
-export default function AccountsPage() {
+export default function ContractsPage() {
   const { user } = useAuth();
   const router = useRouter();
 
@@ -22,8 +22,8 @@ export default function AccountsPage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Quản lý tài khoản" />
-      <AccountList />
+      <PageBreadcrumb pageTitle="Quản lý biên bản" />
+      <ContractList />
     </div>
   );
-} 
+}

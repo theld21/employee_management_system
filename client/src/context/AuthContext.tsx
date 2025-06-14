@@ -10,7 +10,7 @@ type User = {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'manager' | 'employee';
+  role: 'admin' | 'user';
 };
 
 type RegisterData = {
