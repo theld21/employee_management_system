@@ -6,13 +6,12 @@ import { useSidebar } from "../context/SidebarContext";
 import {
   CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
-  UserIcon,
   FileIcon,
   GroupIcon,
   ListIcon,
   PaperPlaneIcon,
-  PlugInIcon
+  PlugInIcon,
+  HomeIcon
 } from "../icons/index";
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,7 +24,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <HomeIcon />,
     name: "Trang chủ",
     path: "/",
   },
@@ -36,30 +35,22 @@ const navItems: NavItem[] = [
   },
   {
     icon: <PaperPlaneIcon />,
-    name: "Yêu cầu của tôi",
-    path: "/requests",
+    name: "Yêu cầu",
+    subItems: [
+      { name: "Yêu cầu của tôi", path: "/requests" },
+      { name: "Yêu cầu cần duyệt", path: "/admin/requests" },
+    ],
   },
   {
     icon: <FileIcon />,
-    name: "Biên bản của tôi",
-    path: "/contracts",
+    name: "Biên bản",
+    subItems: [
+      { name: "Biên bản của tôi", path: "/contracts" },
+    ],
   },
-];
-
-const userItems: NavItem[] = [
 ];
 
 const adminItems: NavItem[] = [
-  {
-    icon: <UserIcon />,
-    name: "Quản lý tài khoản",
-    path: "/admin/accounts",
-  },
-  {
-    icon: <FileIcon />,
-    name: "Quản lý yêu cầu",
-    path: "/admin/requests",
-  },
   {
     icon: <ListIcon />,
     name: "Quản lý biên bản",
@@ -68,21 +59,20 @@ const adminItems: NavItem[] = [
   {
     icon: <PlugInIcon />,
     name: "Quản lý thiết bị",
-    path: "/admin/devices",
-  },
-  {
-    icon: <GridIcon />,
-    name: "Quản lý loại thiết bị",
-    path: "/admin/device-types",
+    subItems: [
+      { name: "Danh sách thiết bị", path: "/admin/devices" },
+      { name: "Loại thiết bị", path: "/admin/device-types" },
+    ],
   },
   {
     icon: <GroupIcon />,
-    name: "Quản lý nhóm",
-    path: "/admin/groups",
+    name: "Quản lý tài khoản",
+    subItems: [
+      { name: "Quản lý tài khoản", path: "/admin/accounts" },
+      { name: "Quản lý nhóm", path: "/admin/groups" },
+    ],
   },
 ];
-
-const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = (): React.ReactElement => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -117,46 +107,85 @@ const AppSidebar: React.FC = (): React.ReactElement => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "others" | "admin" | "user"
+    menuType: "main" | "admin"
   ): React.ReactElement => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
-              } cursor-pointer ${
-                !isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-              }`}
-            >
-              <span
-                className={`${
+            <div>
+              <button
+                onClick={() => handleSubmenuToggle(index, menuType)}
+                className={`menu-item group w-full ${
                   openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
+                } cursor-pointer ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "lg:justify-start"
                 }`}
               >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                <span
+                  className={`${
                     openSubmenu?.type === menuType && openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
                   }`}
-                />
-              )}
-            </button>
+                >
+                  {nav.icon}
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <span className="menu-item-text">{nav.name}</span>
+                )}
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <ChevronDownIcon
+                    className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                      openSubmenu?.type === menuType && openSubmenu?.index === index
+                        ? "rotate-180 text-brand-500"
+                        : ""
+                    }`}
+                  />
+                )}
+              </button>
+              <div
+                ref={(el) => {
+                  subMenuRefs.current[`${menuType}-${index}`] = el;
+                }}
+                className={`overflow-hidden transition-all duration-200 ${
+                  openSubmenu?.type === menuType && openSubmenu?.index === index
+                    ? "max-h-[500px] opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+                style={{
+                  maxHeight: openSubmenu?.type === menuType && openSubmenu?.index === index
+                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                    : "0px"
+                }}
+              >
+                <ul className="pl-4 mt-2 space-y-2">
+                  {nav.subItems.map((subItem) => (
+                    <li key={subItem.path}>
+                      <Link
+                        href={subItem.path}
+                        className={`block px-4 py-2 text-sm rounded-md transition-colors ${
+                          isActive(subItem.path)
+                            ? "text-brand-500 bg-brand-50 dark:bg-brand-900/50"
+                            : "text-gray-600 hover:text-brand-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        {subItem.name}
+                        {subItem.new && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-medium text-brand-500 bg-brand-50 rounded-full dark:bg-brand-900/50">
+                            Mới
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           ) : (
             nav.path && (
               <Link
@@ -202,11 +231,9 @@ const AppSidebar: React.FC = (): React.ReactElement => {
           </Link>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-8">
+        <nav className="flex-1 px-4 py-4 space-y-8 overflow-y-auto">
           {renderMenuItems(navItems, "main")}
           {user?.role === "admin" && renderMenuItems(adminItems, "admin")}
-          {(user?.role === "user") && renderMenuItems(userItems, "user")}
-          {renderMenuItems(othersItems, "others")}
         </nav>
       </div>
     </aside>

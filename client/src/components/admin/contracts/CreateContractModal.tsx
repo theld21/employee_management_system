@@ -44,7 +44,7 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchDevicesAndUsers();
+      fetchUsers();
       // Reset form when modal opens
       setFormData({
         deviceId: '',
@@ -54,6 +54,7 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
       });
       setError(null);
       setUserSearchQuery('');
+      setDevices([]);
     }
   }, [isOpen]);
 
@@ -70,20 +71,41 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
     }
   }, [userSearchQuery, users]);
 
-  const fetchDevicesAndUsers = async () => {
+  // Fetch devices based on contract type and user selection
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        if (formData.type === 'ASSIGNMENT') {
+          // For assignment, fetch only unassigned devices
+          const response = await api.get('/devices/all', {
+            params: { unassignedOnly: 'true' }
+          });
+          setDevices(response.data || []);
+        } else if (formData.type === 'RECOVERY' && formData.userId) {
+          // For recovery, fetch devices assigned to the selected user
+          const response = await api.get(`/devices/user/${formData.userId}`);
+          setDevices(response.data || []);
+        } else {
+          setDevices([]);
+        }
+      } catch (err) {
+        console.error('Error fetching devices:', err);
+        setError('Không thể tải danh sách thiết bị');
+        setDevices([]);
+      }
+    };
+
+    fetchDevices();
+  }, [formData.type, formData.userId]);
+
+  const fetchUsers = async () => {
     try {
-      const [devicesResponse, usersResponse] = await Promise.all([
-        api.get('/devices/all'),
-        api.get('/groups/users'),
-      ]);
-      setDevices(devicesResponse.data || []);
-      setUsers(usersResponse.data || []);
-      setFilteredUsers(usersResponse.data || []);
+      const response = await api.get('/groups/users');
+      setUsers(response.data || []);
+      setFilteredUsers(response.data || []);
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Không thể tải dữ liệu thiết bị và người dùng');
-      // Set empty arrays in case of error
-      setDevices([]);
+      console.error('Error fetching users:', err);
+      setError('Không thể tải danh sách người dùng');
       setUsers([]);
       setFilteredUsers([]);
     }
@@ -111,7 +133,9 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      // Reset deviceId when type or userId changes
+      ...(name === 'type' || name === 'userId' ? { deviceId: '' } : {})
     }));
   };
 
@@ -152,24 +176,20 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="deviceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Thiết bị
+            <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Loại biên bản
             </label>
             <select
-              id="deviceId"
-              name="deviceId"
-              value={formData.deviceId}
+              id="type"
+              name="type"
+              value={formData.type}
               onChange={handleChange}
               required
               disabled={loading}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
             >
-              <option value="">Chọn thiết bị</option>
-              {devices.map(device => (
-                <option key={device._id} value={device._id}>
-                  {device.code} - {device.description}
-                </option>
-              ))}
+              <option value="ASSIGNMENT">Bàn giao</option>
+              <option value="RECOVERY">Thu hồi</option>
             </select>
           </div>
 
@@ -210,21 +230,30 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Loại biên bản
+            <label htmlFor="deviceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Thiết bị
             </label>
             <select
-              id="type"
-              name="type"
-              value={formData.type}
+              id="deviceId"
+              name="deviceId"
+              value={formData.deviceId}
               onChange={handleChange}
               required
-              disabled={loading}
+              disabled={loading || (formData.type === 'RECOVERY' && !formData.userId)}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
             >
-              <option value="ASSIGNMENT">Bàn giao</option>
-              <option value="RECOVERY">Thu hồi</option>
+              <option value="">Chọn thiết bị</option>
+              {devices.map(device => (
+                <option key={device._id} value={device._id}>
+                  {device.code} - {device.description}
+                </option>
+              ))}
             </select>
+            {formData.type === 'RECOVERY' && !formData.userId && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Vui lòng chọn nhân viên trước
+              </p>
+            )}
           </div>
 
           <div>

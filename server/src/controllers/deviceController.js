@@ -4,7 +4,15 @@ const { validateDevice } = require("../validators/deviceValidator");
 // Get all devices without pagination (for dropdowns)
 exports.getAllDevicesSimple = async (req, res) => {
   try {
-    const devices = await Device.find()
+    const { unassignedOnly } = req.query;
+    const query = {};
+
+    if (unassignedOnly === "true") {
+      // Find devices that are not assigned to any user
+      query.user = { $exists: false };
+    }
+
+    const devices = await Device.find(query)
       .select("_id code typeCode description")
       .sort({ code: 1 });
     res.json(devices);
@@ -181,5 +189,19 @@ exports.deleteDevice = async (req, res) => {
   } catch (error) {
     console.error("Lỗi xóa thiết bị:", error);
     res.status(500).json({ message: "Lỗi xóa thiết bị" });
+  }
+};
+
+// Get devices by user ID
+exports.getDevicesByUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const devices = await Device.find({ user: userId })
+      .select("_id code typeCode description")
+      .sort({ code: 1 });
+    res.json(devices);
+  } catch (error) {
+    console.error("Lỗi lấy thiết bị của người dùng:", error);
+    res.status(500).json({ message: "Lỗi lấy thiết bị" });
   }
 };
