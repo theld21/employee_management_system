@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
+const newsRoutes = require("./src/routes/newsRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -88,6 +89,8 @@ const initializeData = async () => {
     console.error("Error initializing data:", error);
   }
 };
+
+app.use("/api/news", newsRoutes);
 
 // Start the server
 app.listen(PORT, "0.0.0.0", () => {

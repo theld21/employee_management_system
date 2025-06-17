@@ -12,6 +12,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const deviceTypeRoutes = require("./routes/deviceTypeRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
 const contractRoutes = require("./routes/contractRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 // Initialize app
 const app = express();
@@ -72,7 +73,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/device-types", deviceTypeRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/contracts", contractRoutes);
-
+app.use("/api/news", newsRoutes);
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "success", message: "Server is running" });
