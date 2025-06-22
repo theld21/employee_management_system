@@ -11,6 +11,18 @@ type User = {
   firstName: string;
   lastName: string;
   role: 'admin' | 'user';
+  phoneNumber?: string;
+  position?: string;
+  department?: string;
+  address?: string;
+  employeeId?: string;
+  gender?: number;
+  dateOfBirth?: string;
+  status?: 'active' | 'inactive' | 'suspended';
+  group?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 type RegisterData = {
@@ -58,13 +70,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = Cookies.get('token');
     if (storedToken) {
       setToken(storedToken);
-      fetchCurrentUser(storedToken);
+      fetchCurrentUser();
     } else {
       setLoading(false);
     }
   }, []);
 
-  const fetchCurrentUser = async (_authToken: string) => {
+  const fetchCurrentUser = async () => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data);

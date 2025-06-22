@@ -136,3 +136,43 @@ exports.getCurrentUser = async (req, res) => {
     res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
+
+// Update current user profile
+exports.updateProfile = async (req, res) => {
+  try {
+    // Only allow specific fields to be updated to avoid unwanted changes
+    const ALLOWED_FIELDS = [
+      "firstName",
+      "lastName",
+      "phoneNumber",
+      "address",
+      "position",
+      "department",
+      "gender",
+      "dateOfBirth",
+      "email",
+    ];
+
+    const updates = {};
+    ALLOWED_FIELDS.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No valid fields provided for update" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+    }).select("-password");
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};

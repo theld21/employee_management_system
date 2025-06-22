@@ -33,4 +33,7 @@ router.post(
 // Get current user
 router.get("/me", auth, authController.getCurrentUser);
 
+// Update current user profile
+router.put("/profile", auth, authController.updateProfile);
+
 module.exports = router;
