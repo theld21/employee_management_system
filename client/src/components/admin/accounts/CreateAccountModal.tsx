@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import api from '@/utils/api';
@@ -18,14 +18,20 @@ interface FormValues {
   phoneNumber: string;
   address: string;
   position: string;
-  department: string;
   role: string;
+  group: string;
+}
+
+interface Group {
+  _id: string;
+  name: string;
 }
 
 interface CreateAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  groups: Group[];
 }
 
 interface ApiError {
@@ -37,6 +43,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  groups,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -54,10 +61,18 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       phoneNumber: '',
       address: '',
       position: '',
-      department: '',
       role: 'user',
+      group: '',
     },
   });
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      reset();
+      setError(null);
+    }
+  }, [isOpen, reset]);
 
   const handleFormSubmit: SubmitHandler<FormValues> = async (data) => {
     setSaving(true);
@@ -77,8 +92,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         phoneNumber: data.phoneNumber.trim(),
         address: data.address,
         position: data.position.trim(),
-        department: data.department.trim(),
         role: data.role,
+        group: data.group,
       };
 
       console.log('Sending payload:', payload);
@@ -304,17 +319,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phòng ban
-              </label>
-              <input
-                id="department"
-                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('department')}
-              />
-            </div>
-
-            <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Quyền
               </label>
@@ -325,6 +329,24 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="group" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nhóm
+              </label>
+              <select
+                id="group"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('group')}
+              >
+                <option value="">Chọn nhóm</option>
+                {groups.map((group) => (
+                  <option key={group._id} value={group._id}>
+                    {group.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

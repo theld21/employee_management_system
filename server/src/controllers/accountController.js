@@ -28,8 +28,9 @@ exports.getAllAccounts = async (req, res) => {
     // Count total documents for pagination info
     const total = await User.countDocuments(query);
 
-    // Get paginated accounts
+    // Get paginated accounts with group populated
     const accounts = await User.find(query, "-password")
+      .populate("group", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -72,8 +73,8 @@ exports.createAccount = async (req, res) => {
       phoneNumber,
       address,
       position,
-      department,
       role,
+      group,
     } = req.body;
 
     // Validate required fields
@@ -105,16 +106,18 @@ exports.createAccount = async (req, res) => {
       phoneNumber,
       address,
       position,
-      department,
       role: role || "user",
+      group,
       status: "active",
     });
 
     await user.save();
 
-    // Return user without password
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // Return user without password and with group populated
+    const userResponse = await User.findById(user._id, "-password").populate(
+      "group",
+      "name"
+    );
 
     res.status(201).json(userResponse);
   } catch (error) {
@@ -141,9 +144,9 @@ exports.updateAccount = async (req, res) => {
       phoneNumber,
       address,
       position,
-      department,
       role,
       status,
+      group,
     } = req.body;
 
     // Check if user exists
@@ -171,15 +174,17 @@ exports.updateAccount = async (req, res) => {
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (address) user.address = address;
     if (position) user.position = position;
-    if (department) user.department = department;
     if (role) user.role = role;
     if (status) user.status = status;
+    if (group !== undefined) user.group = group;
 
     await user.save();
 
-    // Return updated user without password
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // Return updated user without password and with group populated
+    const userResponse = await User.findById(id, "-password").populate(
+      "group",
+      "name"
+    );
 
     res.json(userResponse);
   } catch (error) {

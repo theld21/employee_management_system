@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import api from '@/utils/api';
@@ -20,7 +20,15 @@ interface Account {
   phoneNumber?: string;
   address?: string;
   position?: string;
-  department?: string;
+  group?: {
+    _id: string;
+    name: string;
+  };
+}
+
+interface Group {
+  _id: string;
+  name: string;
 }
 
 interface FormValues {
@@ -34,7 +42,7 @@ interface FormValues {
   phoneNumber: string;
   address: string;
   position: string;
-  department: string;
+  group: string;
   role: string;
   status: string;
 }
@@ -44,6 +52,7 @@ interface AccountDetailModalProps {
   onClose: () => void;
   account: Account;
   onUpdate: () => void;
+  groups: Group[];
 }
 
 export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
@@ -51,11 +60,12 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   onClose,
   account,
   onUpdate,
+  groups,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
     defaultValues: {
       username: account.username,
       email: account.email,
@@ -67,11 +77,33 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       phoneNumber: account.phoneNumber || '',
       address: account.address || '',
       position: account.position || '',
-      department: account.department || '',
+      group: account.group?._id || '',
       role: account.role,
       status: account.status,
     },
   });
+
+  // Reset form with account data when modal opens or account changes
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        username: account.username,
+        email: account.email,
+        firstName: account.firstName || '',
+        lastName: account.lastName || '',
+        employeeId: account.employeeId || '',
+        gender: account.gender ?? 1,
+        dateOfBirth: account.dateOfBirth ? new Date(account.dateOfBirth).toISOString().split('T')[0] : '',
+        phoneNumber: account.phoneNumber || '',
+        address: account.address || '',
+        position: account.position || '',
+        group: account.group?._id || '',
+        role: account.role,
+        status: account.status,
+      });
+      setError(null);
+    }
+  }, [isOpen, account, reset]);
 
   const handleFormSubmit: SubmitHandler<FormValues> = async (data) => {
     setSaving(true);
@@ -268,14 +300,21 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phòng ban
+              <label htmlFor="group" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nhóm
               </label>
-              <input
-                id="department"
+              <select
+                id="group"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('department')}
-              />
+                {...register('group')}
+              >
+                <option value="">Chọn nhóm</option>
+                {groups.map((group) => (
+                  <option key={group._id} value={group._id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

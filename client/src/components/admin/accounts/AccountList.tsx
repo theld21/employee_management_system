@@ -16,11 +16,19 @@ interface Account {
   firstName?: string;
   lastName?: string;
   employeeId?: string;
-  gender?: string;
+  gender?: number;
   dateOfBirth?: string;
   phoneNumber?: string;
   position?: string;
-  department?: string;
+  group?: {
+    _id: string;
+    name: string;
+  };
+}
+
+interface Group {
+  _id: string;
+  name: string;
 }
 
 interface User {
@@ -32,7 +40,9 @@ interface User {
 
 export const AccountList: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
@@ -44,6 +54,20 @@ export const AccountList: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch groups once when component mounts
+  const fetchGroups = async () => {
+    setLoadingGroups(true);
+    try {
+      const response = await api.get('/groups?limit=100');
+      setGroups(response.data.groups || []);
+    } catch (err) {
+      console.error('Error fetching groups:', err);
+      setError('Không thể tải danh sách nhóm');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
 
   const fetchAccounts = async (page = currentPage, limit = pageSize, search = searchQuery) => {
     try {
@@ -69,7 +93,11 @@ export const AccountList: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAccounts();
+    // Load both accounts and groups when component mounts
+    const loadData = async () => {
+      await Promise.all([fetchAccounts(), fetchGroups()]);
+    };
+    loadData();
   }, []);
 
   // Handle search input change
@@ -127,7 +155,7 @@ export const AccountList: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || loadingGroups) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
@@ -203,7 +231,7 @@ export const AccountList: React.FC = () => {
                 Chức vụ
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Phòng ban
+                Nhóm
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Role
@@ -235,7 +263,7 @@ export const AccountList: React.FC = () => {
                   {account.position || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                  {account.department || '-'}
+                  {account.group?.name || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                   {account.role}
@@ -343,6 +371,7 @@ export const AccountList: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => fetchAccounts(currentPage, pageSize, searchQuery)}
+        groups={groups}
       />
 
       {selectedAccount && (
@@ -351,6 +380,7 @@ export const AccountList: React.FC = () => {
           onClose={() => setSelectedAccount(null)}
           account={selectedAccount}
           onUpdate={() => fetchAccounts(currentPage, pageSize, searchQuery)}
+          groups={groups}
         />
       )}
     </div>
