@@ -8,7 +8,6 @@ interface DeviceType {
   _id: string;
   name: string;
   code: string;
-  isActive: boolean;
   createdAt: string;
 }
 
@@ -32,16 +31,14 @@ export const DeviceTypeDetailModal: React.FC<DeviceTypeDetailModalProps> = ({
   // Edit form state
   const [editFormData, setEditFormData] = useState({
     name: '',
-    code: '',
-    isActive: true
+    code: ''
   });
 
   useEffect(() => {
     if (isOpen) {
       setEditFormData({
         name: deviceType.name,
-        code: deviceType.code,
-        isActive: deviceType.isActive
+        code: deviceType.code
       });
       setError(null);
       setSuccessMessage(null);
@@ -152,20 +149,6 @@ export const DeviceTypeDetailModal: React.FC<DeviceTypeDetailModalProps> = ({
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               />
             </div>
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={editFormData.isActive}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              disabled={loading}
-              className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              Hoạt động
-            </label>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg mt-6">

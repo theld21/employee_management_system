@@ -17,8 +17,7 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
-    isActive: true
+    code: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +25,6 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,8 +36,7 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
       await api.post('/device-types', formData);
       setFormData({
         name: '',
-        code: '',
-        isActive: true
+        code: ''
       });
       onSuccess();
     } catch (err: unknown) {
@@ -123,21 +116,6 @@ export const CreateDeviceTypeModal: React.FC<CreateDeviceTypeModalProps> = ({
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               />
             </div>
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleCheckboxChange}
-              disabled={loading}
-              className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              Active
-            </label>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">

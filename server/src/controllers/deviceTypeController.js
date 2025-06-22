@@ -1,10 +1,11 @@
 const DeviceType = require("../models/DeviceType");
+const Device = require("../models/Device");
 const { validationResult } = require("express-validator");
 
 // Get all device types (simple list for dropdowns)
 exports.getAllDeviceTypes = async (req, res) => {
   try {
-    const deviceTypes = await DeviceType.find({ isActive: true })
+    const deviceTypes = await DeviceType.find()
       .select("_id name code")
       .sort({ name: 1 });
     res.json(deviceTypes);
@@ -60,9 +61,9 @@ exports.createDeviceType = async (req, res) => {
 
     const { name, code } = req.body;
 
-    // Check if device type with same name or code already exists
+    // Check if device type already exists
     const existingDeviceType = await DeviceType.findOne({
-      $or: [{ name }, { code }],
+      $or: [{ name }, { code: code.toUpperCase() }],
     });
 
     if (existingDeviceType) {
@@ -93,7 +94,7 @@ exports.updateDeviceType = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, code, isActive } = req.body;
+    const { name, code } = req.body;
 
     const deviceType = await DeviceType.findById(id);
     if (!deviceType) {
@@ -116,9 +117,6 @@ exports.updateDeviceType = async (req, res) => {
 
     deviceType.name = name;
     deviceType.code = code.toUpperCase();
-    if (typeof isActive === "boolean") {
-      deviceType.isActive = isActive;
-    }
 
     await deviceType.save();
     res.json(deviceType);
@@ -136,6 +134,14 @@ exports.deleteDeviceType = async (req, res) => {
     const deviceType = await DeviceType.findById(id);
     if (!deviceType) {
       return res.status(404).json({ message: "Loại thiết bị không tồn tại" });
+    }
+
+    // Check if any devices are using this device type
+    const devicesUsingType = await Device.find({ typeCode: deviceType.code });
+    if (devicesUsingType.length > 0) {
+      return res.status(400).json({
+        message: `Không thể xóa loại thiết bị này vì có ${devicesUsingType.length} thiết bị đang sử dụng. Vui lòng xóa hoặc chuyển đổi các thiết bị trước khi xóa loại thiết bị.`,
+      });
     }
 
     await deviceType.deleteOne();

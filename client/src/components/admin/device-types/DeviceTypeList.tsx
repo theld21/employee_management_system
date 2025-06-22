@@ -9,7 +9,6 @@ interface DeviceType {
   _id: string;
   name: string;
   code: string;
-  isActive: boolean;
   createdAt: string;
 }
 
@@ -75,9 +74,11 @@ export const DeviceTypeList: React.FC = () => {
     try {
       await api.delete(`/device-types/${id}`);
       fetchDeviceTypes();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error deleting device type:', err);
-      alert('Failed to delete device type');
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage = error.response?.data?.message || 'Failed to delete device type';
+      alert(errorMessage);
     }
   };
 
@@ -135,9 +136,6 @@ export const DeviceTypeList: React.FC = () => {
                 >
                   Code {sortField === 'code' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Trạng thái
-                </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Hành động
                 </th>
@@ -151,15 +149,6 @@ export const DeviceTypeList: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {deviceType.code}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      deviceType.isActive
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                    }`}>
-                      {deviceType.isActive ? 'Hoạt động' : 'Không hoạt động'}
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
