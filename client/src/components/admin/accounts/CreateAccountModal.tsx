@@ -20,6 +20,7 @@ interface FormValues {
   position: string;
   role: string;
   group: string;
+  startDate: string;
 }
 
 interface Group {
@@ -63,6 +64,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       position: '',
       role: 'user',
       group: '',
+      startDate: '',
     },
   });
 
@@ -94,6 +96,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         position: data.position.trim(),
         role: data.role,
         group: data.group,
+        startDate: data.startDate,
       };
 
       console.log('Sending payload:', payload);
@@ -348,6 +351,18 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Ngày bắt đầu làm việc
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('startDate')}
+              />
             </div>
           </div>
 

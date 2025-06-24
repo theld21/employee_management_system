@@ -24,6 +24,7 @@ interface Account {
     _id: string;
     name: string;
   };
+  startDate?: string;
 }
 
 interface Group {
@@ -45,6 +46,7 @@ interface FormValues {
   group: string;
   role: string;
   status: string;
+  startDate: string;
 }
 
 interface AccountDetailModalProps {
@@ -80,6 +82,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       group: account.group?._id || '',
       role: account.role,
       status: account.status,
+      startDate: account.startDate ? new Date(account.startDate).toISOString().split('T')[0] : '',
     },
   });
 
@@ -100,6 +103,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         group: account.group?._id || '',
         role: account.role,
         status: account.status,
+        startDate: account.startDate ? new Date(account.startDate).toISOString().split('T')[0] : '',
       });
       setError(null);
     }
@@ -344,6 +348,18 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 <option value="inactive">Không hoạt động</option>
                 <option value="suspended">Tạm khóa</option>
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Ngày bắt đầu làm việc
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                {...register('startDate')}
+              />
             </div>
           </div>
 

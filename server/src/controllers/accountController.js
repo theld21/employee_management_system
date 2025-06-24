@@ -75,6 +75,7 @@ exports.createAccount = async (req, res) => {
       position,
       role,
       group,
+      startDate,
     } = req.body;
 
     // Validate required fields
@@ -109,6 +110,7 @@ exports.createAccount = async (req, res) => {
       role: role || "user",
       group,
       status: "active",
+      startDate,
     });
 
     await user.save();
@@ -147,6 +149,7 @@ exports.updateAccount = async (req, res) => {
       role,
       status,
       group,
+      startDate,
     } = req.body;
 
     // Check if user exists
@@ -176,7 +179,9 @@ exports.updateAccount = async (req, res) => {
     if (position) user.position = position;
     if (role) user.role = role;
     if (status) user.status = status;
-    if (group !== undefined) user.group = group;
+    if (group !== undefined && group !== null && group !== "")
+      user.group = group;
+    if (startDate) user.startDate = startDate;
 
     await user.save();
 
