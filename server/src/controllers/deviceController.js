@@ -1,4 +1,5 @@
 const Device = require("../models/Device");
+const Contract = require("../models/Contract");
 const { validateDevice } = require("../validators/deviceValidator");
 
 // Get all devices without pagination (for dropdowns)
@@ -182,6 +183,14 @@ exports.deleteDevice = async (req, res) => {
     const device = await Device.findById(req.params.id);
     if (!device) {
       return res.status(404).json({ message: "Thiết bị không tồn tại" });
+    }
+
+    // Check if any contracts are using this device
+    const contractsUsingDevice = await Contract.find({ device: req.params.id });
+    if (contractsUsingDevice.length > 0) {
+      return res.status(400).json({
+        message: `Không thể xóa thiết bị này vì có ${contractsUsingDevice.length} biên bản đang sử dụng. Vui lòng xóa hoặc chuyển đổi các biên bản trước khi xóa thiết bị.`,
+      });
     }
 
     await Device.findByIdAndDelete(req.params.id);

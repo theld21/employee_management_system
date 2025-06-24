@@ -121,9 +121,11 @@ export const DeviceList: React.FC = () => {
     try {
       await api.delete(`/devices/${id}`);
       fetchDevices();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error deleting device:', err);
-      alert('Không thể xóa thiết bị');
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage = error.response?.data?.message || 'Không thể xóa thiết bị';
+      alert(errorMessage);
     }
   };
 
