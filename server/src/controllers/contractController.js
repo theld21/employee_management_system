@@ -118,13 +118,11 @@ exports.createContract = async (req, res) => {
 
     // For ASSIGNMENT contracts, check if device is already assigned
     if (type === "ASSIGNMENT") {
-      const existingAssignment = await Contract.findOne({
-        device: deviceId,
-        type: "ASSIGNMENT",
-        status: { $in: ["PENDING", "CONFIRMED"] },
+      // Lấy hợp đồng mới nhất của thiết bị
+      const latestContract = await Contract.findOne({ device: deviceId }).sort({
+        createdAt: -1,
       });
-
-      if (existingAssignment) {
+      if (latestContract && latestContract.type === "ASSIGNMENT") {
         return res.status(400).json({
           message: "Thiết bị đã được gán hoặc đang chờ gán",
         });

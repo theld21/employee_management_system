@@ -99,18 +99,6 @@ export const DeviceTypeList: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex justify-between items-center">
-        <div className="flex-1 max-w-sm">
-          <input
-            type="text"
-            placeholder="Tìm kiếm loại thiết bị..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-      </div>
-
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>

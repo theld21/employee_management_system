@@ -15,6 +15,11 @@ interface Device {
   code: string;
   typeCode: string;
   description: string;
+  owner?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 
 interface User {
@@ -55,6 +60,8 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
       setError(null);
       setUserSearchQuery('');
       setDevices([]);
+      // Fetch devices for ASSIGNMENT type (default)
+      fetchDevicesForType('ASSIGNMENT');
     }
   }, [isOpen]);
 
@@ -71,32 +78,32 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
     }
   }, [userSearchQuery, users]);
 
-  // Fetch devices based on contract type and user selection
+  // Fetch devices based on contract type
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        if (formData.type === 'ASSIGNMENT') {
-          // For assignment, fetch only unassigned devices
-          const response = await api.get('/devices/all', {
-            params: { unassignedOnly: 'true' }
-          });
-          setDevices(response.data || []);
-        } else if (formData.type === 'RECOVERY' && formData.userId) {
-          // For recovery, fetch devices assigned to the selected user
-          const response = await api.get(`/devices/user/${formData.userId}`);
-          setDevices(response.data || []);
-        } else {
-          setDevices([]);
-        }
-      } catch (err) {
-        console.error('Error fetching devices:', err);
-        setError('Không thể tải danh sách thiết bị');
+    fetchDevicesForType(formData.type);
+  }, [formData.type]);
+
+  const fetchDevicesForType = async (type: string) => {
+    try {
+      if (type === 'ASSIGNMENT') {
+        // For assignment, fetch only unassigned devices
+        const response = await api.get('/devices/all', {
+          params: { unassignedOnly: 'true' }
+        });
+        setDevices(response.data || []);
+      } else if (type === 'RECOVERY') {
+        // For recovery, fetch devices currently assigned to any user
+        const response = await api.get('/devices/assigned');
+        setDevices(response.data || []);
+      } else {
         setDevices([]);
       }
-    };
-
-    fetchDevices();
-  }, [formData.type, formData.userId]);
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+      setError('Không thể tải danh sách thiết bị');
+      setDevices([]);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -117,7 +124,13 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
     setError(null);
 
     try {
-      await api.post('/contracts', formData);
+      const submitData = { ...formData };
+      if (formData.type === 'RECOVERY') {
+        // Lấy userId từ device.owner
+        const selectedDevice = devices.find(d => d._id === formData.deviceId);
+        submitData.userId = selectedDevice?.owner?._id || '';
+      }
+      await api.post('/contracts', submitData);
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -193,68 +206,93 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label htmlFor="userId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nhân viên
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm nhân viên..."
-                value={userSearchQuery}
-                onChange={(e) => setUserSearchQuery(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-              />
-              <div className="absolute right-3 top-2.5">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          {/* Nếu là ASSIGNMENT thì chọn user và thiết bị chưa ai sở hữu */}
+          {formData.type === 'ASSIGNMENT' && (
+            <>
+              <div>
+                <label htmlFor="userId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nhân viên
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm nhân viên..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                  />
+                  <div className="absolute right-3 top-2.5">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <select
+                  id="userId"
+                  name="userId"
+                  value={formData.userId}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
+                >
+                  <option value="">Chọn nhân viên</option>
+                  {filteredUsers.map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName} ({user.username})
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <select
-              id="userId"
-              name="userId"
-              value={formData.userId}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              className="mt-2 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-            >
-              <option value="">Chọn nhân viên</option>
-              {filteredUsers.map(user => (
-                <option key={user._id} value={user._id}>
-                  {user.firstName} {user.lastName} ({user.username})
-                </option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label htmlFor="deviceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Thiết bị
+                </label>
+                <select
+                  id="deviceId"
+                  name="deviceId"
+                  value={formData.deviceId}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
+                >
+                  <option value="">Chọn thiết bị</option>
+                  {devices.map(device => (
+                    <option key={device._id} value={device._id}>
+                      {device.code} - {device.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-          <div>
-            <label htmlFor="deviceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Thiết bị
-            </label>
-            <select
-              id="deviceId"
-              name="deviceId"
-              value={formData.deviceId}
-              onChange={handleChange}
-              required
-              disabled={loading || (formData.type === 'RECOVERY' && !formData.userId)}
-              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-            >
-              <option value="">Chọn thiết bị</option>
-              {devices.map(device => (
-                <option key={device._id} value={device._id}>
-                  {device.code} - {device.description}
-                </option>
-              ))}
-            </select>
-            {formData.type === 'RECOVERY' && !formData.userId && (
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Vui lòng chọn nhân viên trước
-              </p>
-            )}
-          </div>
+          {/* Nếu là RECOVERY thì chỉ chọn thiết bị đang có người sử dụng, option hiển thị cả tên người sở hữu */}
+          {formData.type === 'RECOVERY' && (
+            <div>
+              <label htmlFor="deviceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Thiết bị cần thu hồi
+              </label>
+              <select
+                id="deviceId"
+                name="deviceId"
+                value={formData.deviceId}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
+              >
+                <option value="">Chọn thiết bị</option>
+                {devices.map(device => (
+                  <option key={device._id} value={device._id}>
+                    {device.code} - {device.description}
+                    {device.owner ? ` (Hiện tại: ${device.owner.firstName} ${device.owner.lastName})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="note" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -283,7 +321,7 @@ export const CreateContractModal: React.FC<CreateContractModalProps> = ({
             </button>
             <button 
               type="submit"
-              disabled={loading || !formData.deviceId || !formData.userId}
+              disabled={loading || !formData.deviceId || (formData.type === 'ASSIGNMENT' && !formData.userId)}
               className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 border border-transparent rounded-md shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
             >
               {loading ? (

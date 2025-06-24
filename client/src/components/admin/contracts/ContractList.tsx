@@ -76,11 +76,17 @@ export const ContractList: React.FC = () => {
 
   useEffect(() => {
     fetchContracts();
-  }, [pagination.page, searchQuery, selectedType, selectedStatus, sortField, sortOrder]);
+  }, [pagination.page, selectedType, selectedStatus, sortField, sortOrder]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setPagination(prev => ({ ...prev, page: 1 }));
+      fetchContracts();
+    }
   };
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -173,7 +179,8 @@ export const ContractList: React.FC = () => {
                 type="text"
                 placeholder="Tìm kiếm biên bản..."
                 value={searchQuery}
-                onChange={handleSearch}
+                onChange={handleSearchInput}
+                onKeyDown={handleSearchKeyDown}
                 className="w-64 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <svg

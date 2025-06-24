@@ -28,10 +28,14 @@ interface Pagination {
   limit: number;
 }
 
+interface DeviceOwner {
+  [deviceId: string]: { firstName: string; lastName: string; _id: string } | null;
+}
+
 export const DeviceList: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
@@ -46,6 +50,7 @@ export const DeviceList: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deviceOwners, setDeviceOwners] = useState<DeviceOwner>({});
 
   const fetchDeviceTypes = async () => {
     try {
@@ -58,9 +63,24 @@ export const DeviceList: React.FC = () => {
     }
   };
 
+  const fetchDeviceOwners = async (devices: Device[]) => {
+    const owners: DeviceOwner = {};
+    await Promise.all(
+      devices.map(async (device) => {
+        try {
+          const res = await api.get(`/devices/${device._id}/owner`);
+          owners[device._id] = res.data.owner;
+        } catch {
+          owners[device._id] = null;
+        }
+      })
+    );
+    setDeviceOwners(owners);
+  };
+
   const fetchDevices = async () => {
     try {
-      setLoading(true);
+      setTableLoading(true);
       const response = await api.get('/devices', {
         params: {
           page: pagination.page,
@@ -74,11 +94,12 @@ export const DeviceList: React.FC = () => {
       setDevices(response.data.devices);
       setPagination(response.data.pagination);
       setError(null);
+      fetchDeviceOwners(response.data.devices);
     } catch (err) {
       setError('Không thể tải danh sách thiết bị');
       console.error('Error fetching devices:', err);
     } finally {
-      setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -88,11 +109,17 @@ export const DeviceList: React.FC = () => {
 
   useEffect(() => {
     fetchDevices();
-  }, [pagination.page, searchQuery, selectedTypeCode, sortField, sortOrder]);
+  }, [pagination.page, selectedTypeCode, sortField, sortOrder]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setPagination(prev => ({ ...prev, page: 1 }));
+      fetchDevices();
+    }
   };
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -157,7 +184,8 @@ export const DeviceList: React.FC = () => {
             type="text"
             placeholder="Tìm kiếm theo mã thiết bị, mô tả hoặc ghi chú..."
             value={searchQuery}
-            onChange={handleSearch}
+            onChange={handleSearchInput}
+            onKeyDown={handleSearchKeyDown}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
@@ -178,16 +206,17 @@ export const DeviceList: React.FC = () => {
       </div>
 
       {/* Device Table */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="text-red-500 text-center bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-md p-4">
           {error}
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+          {tableLoading && (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500"></div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -211,6 +240,9 @@ export const DeviceList: React.FC = () => {
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Ghi chú
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Người sở hữu
                   </th>
                   <th
                     scope="col"
@@ -240,6 +272,11 @@ export const DeviceList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                       {device.note || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {deviceOwners[device._id]
+                        ? `${deviceOwners[device._id]?.firstName || ''} ${deviceOwners[device._id]?.lastName || ''}`.trim()
+                        : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(device.createdAt)}

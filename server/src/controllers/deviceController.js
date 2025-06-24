@@ -6,16 +6,31 @@ const { validateDevice } = require("../validators/deviceValidator");
 exports.getAllDevicesSimple = async (req, res) => {
   try {
     const { unassignedOnly } = req.query;
-    const query = {};
-
+    let devices = [];
     if (unassignedOnly === "true") {
-      // Find devices that are not assigned to any user
-      query.user = { $exists: false };
+      // Lấy hợp đồng mới nhất cho mỗi thiết bị
+      const latestContracts = await Contract.aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: "$device",
+            latestContract: { $first: "$$ROOT" },
+          },
+        },
+      ]);
+      // Lấy danh sách deviceId đã được ASSIGNMENT
+      const assignedDeviceIds = latestContracts
+        .filter((c) => c.latestContract.type === "ASSIGNMENT")
+        .map((c) => c._id.toString());
+      // Lấy tất cả thiết bị không nằm trong danh sách đã được ASSIGNMENT
+      devices = await Device.find({ _id: { $nin: assignedDeviceIds } })
+        .select("_id code typeCode description")
+        .sort({ code: 1 });
+    } else {
+      devices = await Device.find()
+        .select("_id code typeCode description")
+        .sort({ code: 1 });
     }
-
-    const devices = await Device.find(query)
-      .select("_id code typeCode description")
-      .sort({ code: 1 });
     res.json(devices);
   } catch (error) {
     console.error("Lỗi lấy thiết bị:", error);
@@ -212,5 +227,74 @@ exports.getDevicesByUser = async (req, res) => {
   } catch (error) {
     console.error("Lỗi lấy thiết bị của người dùng:", error);
     res.status(500).json({ message: "Lỗi lấy thiết bị" });
+  }
+};
+
+// API: Get current owner of a device
+exports.getDeviceOwner = async (req, res) => {
+  try {
+    const deviceId = req.params.id;
+    // Lấy hợp đồng mới nhất của thiết bị (ưu tiên thời gian tạo mới nhất)
+    const latestContract = await Contract.findOne({ device: deviceId })
+      .sort({ createdAt: -1 })
+      .populate("user");
+
+    if (!latestContract || latestContract.type === "RECOVERY") {
+      // Không có hợp đồng hoặc hợp đồng mới nhất là thu hồi => chưa ai sở hữu
+      return res.json({ owner: null });
+    }
+    // Nếu là ASSIGNMENT => user đang sở hữu
+    return res.json({ owner: latestContract.user });
+  } catch (error) {
+    console.error("Lỗi lấy user sở hữu thiết bị:", error);
+    res.status(500).json({ message: "Lỗi lấy user sở hữu thiết bị" });
+  }
+};
+
+// API: Get all devices currently assigned to a user (for recovery)
+exports.getAssignedDevices = async (req, res) => {
+  try {
+    // Lấy hợp đồng mới nhất cho mỗi thiết bị
+    const latestContracts = await Contract.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$device",
+          latestContract: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $match: {
+          "latestContract.type": "ASSIGNMENT",
+        },
+      },
+    ]);
+    const deviceIds = latestContracts.map((c) => c._id);
+    // Lấy device và user đang sở hữu
+    const devices = await Device.find({ _id: { $in: deviceIds } });
+    // Lấy user cho từng device
+    const userIds = latestContracts.map((c) => c.latestContract.user);
+    const users = await require("../models/User").find({
+      _id: { $in: userIds },
+    });
+    // Map userId -> user
+    const userMap = {};
+    users.forEach((u) => {
+      userMap[u._id.toString()] = u;
+    });
+    // Kết hợp device với user
+    const result = devices.map((device) => {
+      const contract = latestContracts.find(
+        (c) => c._id.toString() === device._id.toString()
+      );
+      const user = contract
+        ? userMap[contract.latestContract.user.toString()]
+        : null;
+      return { ...device.toObject(), owner: user };
+    });
+    res.json(result);
+  } catch (error) {
+    console.error("Lỗi lấy thiết bị đang có người sử dụng:", error);
+    res.status(500).json({ message: "Lỗi lấy thiết bị đang có người sử dụng" });
   }
 };
