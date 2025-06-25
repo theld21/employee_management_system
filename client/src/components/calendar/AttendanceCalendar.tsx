@@ -5,6 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import { EventContentArg, EventSourceFuncArg } from '@fullcalendar/core';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
+import { isWorkDay } from '@/constants/workDays';
 
 interface Attendance {
   _id: string;
@@ -113,50 +114,80 @@ const AttendanceCalendar = () => {
         return;
       }
 
-      const isLateCheckIn = (timeString?: string): boolean => {
-        if (!timeString) return false;
-        const checkInTime = new Date(timeString);
-        const nineAM = new Date(checkInTime);
-        nineAM.setHours(9, 0, 0, 0);
-        return checkInTime > nineAM;
-      };
-
-      const attendanceData: CalendarAttendanceData[] = [];
-
-      // Format the data for FullCalendar
+      const attendanceMap: Record<string, Attendance> = {};
       response.data.forEach((attendance: Attendance) => {
         const date = new Date(attendance.createdAt);
         const formattedDate = formatDate(date);
-        
-        // Check if date is today
-        const today = formatDate(new Date());
-        const isToday = formattedDate === today;
-        
-        const checkInColor = attendance.checkIn?.time
-          ? (isLateCheckIn(attendance.checkIn.time) ? '#F44336' : '#4CAF50')
-          : '#9E9E9E';
-        
-        attendanceData.push({
-          id: attendance._id + "_in",
-          date: formattedDate,
-          color: checkInColor,
-          extendedProps: {
-            time: attendance.checkIn?.time,
-          }
-        });
-        
-        // Only push checkout event if it has checkout time or if it's not today
-        if (attendance.checkOut?.time || !isToday) {
+        attendanceMap[formattedDate] = attendance;
+      });
+
+      // Duyệt từ ngày đầu tới ngày cuối, ngày nào không có dữ liệu thì hiển thị K
+      const start = new Date(info.startStr);
+      const end = new Date(info.endStr);
+      const attendanceData: CalendarAttendanceData[] = [];
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const formattedDate = formatDate(d);
+        // Nếu ngày lớn hơn hôm nay thì bỏ qua
+        const dClone = new Date(d);
+        dClone.setHours(0, 0, 0, 0);
+        if (dClone > todayDate) continue;
+        // Nếu là thứ Bảy hoặc Chủ Nhật thì bỏ qua
+        const dayOfWeek = dClone.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        // Nếu là ngày không phải ngày làm việc thì bỏ qua
+        if (!isWorkDay(dClone)) continue;
+        const attendance = attendanceMap[formattedDate];
+        if (attendance) {
+          // Có dữ liệu, giữ nguyên logic cũ
+          const today = formatDate(new Date());
+          const isToday = formattedDate === today;
+          const isLateCheckIn = (timeString?: string): boolean => {
+            if (!timeString) return false;
+            const checkInTime = new Date(timeString);
+            const nineAM = new Date(checkInTime);
+            nineAM.setHours(9, 0, 0, 0);
+            return checkInTime > nineAM;
+          };
+          const checkInColor = attendance.checkIn?.time
+            ? (isLateCheckIn(attendance.checkIn.time) ? '#F44336' : '#4CAF50')
+            : '#9E9E9E';
           attendanceData.push({
-            id: attendance._id + "_out",
+            id: attendance._id + "_in",
             date: formattedDate,
-            color: attendance.checkOut?.time ? '#4CAF50' : '#F44336',
+            color: checkInColor,
             extendedProps: {
-              time: attendance.checkOut?.time,
+              time: attendance.checkIn?.time,
             }
           });
+          // Only push checkout event if it has checkout time or if it's not today
+          if (attendance.checkOut?.time || !isToday) {
+            attendanceData.push({
+              id: attendance._id + "_out",
+              date: formattedDate,
+              color: attendance.checkOut?.time ? '#4CAF50' : '#F44336',
+              extendedProps: {
+                time: attendance.checkOut?.time,
+              }
+            });
+          }
+        } else {
+          // Không có dữ liệu, hiển thị checkin/check out đều là K
+          attendanceData.push({
+            id: formattedDate + '_in',
+            date: formattedDate,
+            color: '#F44336',
+            extendedProps: { time: undefined }
+          });
+          attendanceData.push({
+            id: formattedDate + '_out',
+            date: formattedDate,
+            color: '#F44336',
+            extendedProps: { time: undefined }
+          });
         }
-      });
+      }
       
       successCallback(attendanceData);
     } catch (error) {
@@ -303,6 +334,7 @@ const AttendanceCalendar = () => {
               minute: '2-digit',
               meridiem: false
             }}
+            firstDay={1}
           />
         </div>
       </div>
