@@ -5,7 +5,7 @@ export const WORK_END_MINUTE = 30;
 export const LUNCH_START_HOUR = 12;
 export const LUNCH_START_MINUTE = 0;
 export const LUNCH_END_HOUR = 13;
-export const LUNCH_END_MINUTE = 30;
+export const LUNCH_END_MINUTE = 0;
 export const WORK_HOURS_REQUIRED = 8;
 
 export function isWorkDay(date: Date): boolean {

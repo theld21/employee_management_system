@@ -5,11 +5,24 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import { EventContentArg, EventSourceFuncArg } from '@fullcalendar/core';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
-import { isWorkDay, getCheckInColor, getCheckOutColor } from '@/constants/workDays';
+import { 
+  isWorkDay, 
+  getCheckInColor, 
+  getCheckOutColor,
+  WORK_START_HOUR,
+  WORK_START_MINUTE,
+  WORK_END_HOUR,
+  WORK_END_MINUTE,
+  LUNCH_START_HOUR,
+  LUNCH_START_MINUTE,
+  LUNCH_END_HOUR,
+  LUNCH_END_MINUTE,
+  WORK_HOURS_REQUIRED
+} from '@/constants/workDays';
 
 interface Attendance {
   _id: string;
-  createdAt: string;
+  date: string;
   checkIn?: string;
   checkOut?: string;
 }
@@ -19,7 +32,6 @@ interface TodayAttendance {
   date: string;
   checkIn?: string;
   checkOut?: string;
-  totalHours?: number;
 }
 
 interface CalendarAttendanceData {
@@ -31,6 +43,10 @@ interface CalendarAttendanceData {
     time?: string;
   };
 }
+
+const formatTimeFromHourMinute = (hour: number, minute: number): string => {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
 
 const AttendanceCalendar = () => {
   const { token } = useAuth();
@@ -87,7 +103,7 @@ const AttendanceCalendar = () => {
       // Create a map for quick lookup
       const attendanceMap = new Map<string, Attendance>();
       response.data.forEach((attendance: Attendance) => {
-        const date = new Date(attendance.createdAt);
+        const date = new Date(attendance.date);
         attendanceMap.set(formatDate(date), attendance);
       });
 
@@ -201,7 +217,7 @@ const AttendanceCalendar = () => {
   const hasCheckedOut = todayAttendance && todayAttendance.checkOut;
 
   return (
-    <div className="space-y-6">      
+    <div className="space-y-6">
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch chấm công</h3>
@@ -278,6 +294,31 @@ const AttendanceCalendar = () => {
             }}
             firstDay={1}
           />
+        </div>
+      </div>
+
+      {/* Work Schedule Rules */}
+      <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Nội quy giờ làm việc
+        </h3>
+        <div className="gap-4">
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300">
+              Thời gian làm việc: {formatTimeFromHourMinute(WORK_START_HOUR, WORK_START_MINUTE)} - {formatTimeFromHourMinute(WORK_END_HOUR, WORK_END_MINUTE)}
+            </h4>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300">
+              Thời gian nghỉ trưa: {formatTimeFromHourMinute(LUNCH_START_HOUR, LUNCH_START_MINUTE)} - {formatTimeFromHourMinute(LUNCH_END_HOUR, LUNCH_END_MINUTE)}
+            </h4>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300">
+                Số giờ làm việc yêu cầu: <span className="font-medium">{WORK_HOURS_REQUIRED} giờ/ngày</span>
+            </h4>
+          </div>
+          
         </div>
       </div>
     </div>

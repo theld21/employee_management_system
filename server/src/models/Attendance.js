@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const AttendanceSchema = new mongoose.Schema(
+const attendanceSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -17,10 +17,6 @@ const AttendanceSchema = new mongoose.Schema(
     checkOut: {
       type: Date,
     },
-    totalHours: {
-      type: Number,
-      default: 0,
-    },
   },
   {
     timestamps: true,
@@ -28,10 +24,10 @@ const AttendanceSchema = new mongoose.Schema(
 );
 
 // Create a compound index for user and date to ensure uniqueness
-AttendanceSchema.index({ user: 1, date: 1 }, { unique: true });
+attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
 
 // Calculate total hours and status when saving
-AttendanceSchema.pre("save", function (next) {
+attendanceSchema.pre("save", function (next) {
   // Calculate total hours if both check-in and check-out exist
   if (this.checkIn && this.checkOut) {
     const checkInTime = new Date(this.checkIn).getTime();
@@ -59,4 +55,4 @@ AttendanceSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("Attendance", AttendanceSchema);
+module.exports = mongoose.model("Attendance", attendanceSchema);

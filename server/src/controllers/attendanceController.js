@@ -53,7 +53,6 @@ exports.checkIn = async (req, res) => {
     }
 
     await attendance.save();
-
     res.status(201).json(attendance);
   } catch (error) {
     console.error(error);
@@ -87,16 +86,12 @@ exports.checkOut = async (req, res) => {
     }
 
     if (attendance.checkOut) {
-      return res
-        .status(400)
-        .json({ message: "You have already checked out today" });
+      return res.status(400).json({ message: "Bạn đã kết thúc hôm nay" });
     }
 
     // Update checkout time
     attendance.checkOut = now;
-
     await attendance.save();
-
     res.json(attendance);
   } catch (error) {
     console.error(error);
@@ -120,14 +115,9 @@ exports.getUserAttendance = async (req, res) => {
         $gte: start,
         $lte: end,
       };
-
-      console.log(
-        `Tìm kiếm lịch chấm công giữa: ${start.toISOString()} và ${end.toISOString()}`
-      );
     }
 
     const attendance = await Attendance.find(query).sort({ date: -1 });
-
     res.json(attendance);
   } catch (error) {
     console.error(error);
@@ -140,10 +130,6 @@ exports.getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user.id;
     const { startOfDay, endOfDay } = getDayBoundaries();
-
-    console.log(
-      `Tìm kiếm lịch chấm công giữa: ${startOfDay.toISOString()} và ${endOfDay.toISOString()}`
-    );
 
     const attendance = await Attendance.findOne({
       user: userId,
