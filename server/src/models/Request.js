@@ -27,8 +27,16 @@ const RequestSchema = new mongoose.Schema(
     },
     status: {
       type: Number,
-      enum: [1, 2, 3, 4], // 1: pending, 2: approved, 3: rejected, 4: cancelled
+      enum: [1, 2, 3, 4, 5], // 1: pending, 2: confirmed, 3: approved, 4: rejected, 5: cancelled
       default: 1,
+    },
+    confirmedBy: {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      date: Date,
+      comment: String,
     },
     approvedBy: {
       user: {

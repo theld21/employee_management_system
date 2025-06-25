@@ -27,6 +27,7 @@ interface Group {
   childGroups: string[];
   isActive: boolean;
   createdAt: string;
+  handleRequestType?: 'confirm' | 'approve' | '';
 }
 
 interface User {
@@ -61,7 +62,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     name: '',
     description: '',
     managerId: '',
-    parentGroupId: ''
+    parentGroupId: '',
+    handleRequestType: ''
   });
   
   // Add member state
@@ -81,7 +83,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         name: group.name,
         description: group.description || '',
         managerId: group.manager?._id || '',
-        parentGroupId: group.parentGroup?._id || ''
+        parentGroupId: group.parentGroup?._id || '',
+        handleRequestType: group.handleRequestType || ''
       });
       setError(null);
       setSuccessMessage(null);
@@ -139,6 +142,10 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
 
       if (editFormData.parentGroupId) {
         payload.parentGroupId = editFormData.parentGroupId;
+      }
+
+      if (editFormData.handleRequestType) {
+        payload.handleRequestType = editFormData.handleRequestType;
       }
 
       await api.put(`/groups/${group._id}`, payload);
@@ -351,6 +358,24 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                 rows={3}
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               />
+            </div>
+
+            <div>
+              <label htmlFor="handleRequestType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Request Handling Permission
+              </label>
+              <select
+                id="handleRequestType"
+                name="handleRequestType"
+                value={editFormData.handleRequestType}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, handleRequestType: e.target.value }))}
+                disabled={loading}
+                className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
+              >
+                <option value="">Select permission type (optional)</option>
+                <option value="confirm">Can Confirm Requests</option>
+                <option value="approve">Can Approve Requests</option>
+              </select>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg mt-6">

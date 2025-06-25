@@ -44,21 +44,19 @@ router.post(
 // Get current user's requests
 router.get("/my", auth, requestController.getUserRequests);
 
-// Get pending requests (for managers)
-router.get(
-  "/pending",
-  auth,
-  authorize("admin", "manager"),
-  requestController.getPendingRequests
-);
+// Get requests for managers based on their handleRequestType
+router.get("/pending", auth, requestController.getRequestsForManager);
 
 // Process request (approve/reject)
 router.put(
   "/:requestId",
   auth,
-  authorize("admin", "manager"),
   [
-    check("action", "Action is required").isIn(["approve", "reject"]),
+    check("action", "Action is required").isIn([
+      "confirm",
+      "approve",
+      "reject",
+    ]),
     check("comment").optional(),
   ],
   requestController.processRequest

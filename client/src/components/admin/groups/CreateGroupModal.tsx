@@ -31,7 +31,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     name: '',
     description: '',
     managerId: '',
-    parentGroupId: ''
+    parentGroupId: '',
+    handleRequestType: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +48,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         name: '',
         description: '',
         managerId: '',
-        parentGroupId: ''
+        parentGroupId: '',
+        handleRequestType: ''
       });
       setError(null);
     }
@@ -91,6 +93,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         description: string;
         managerId?: string;
         parentGroupId?: string;
+        handleRequestType?: string;
       } = {
         name: formData.name,
         description: formData.description
@@ -102,6 +105,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
       if (formData.parentGroupId) {
         payload.parentGroupId = formData.parentGroupId;
+      }
+
+      if (formData.handleRequestType) {
+        payload.handleRequestType = formData.handleRequestType;
       }
 
       await api.post('/groups', payload);
@@ -224,6 +231,24 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   {group.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="handleRequestType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Request Handling Permission
+            </label>
+            <select
+              id="handleRequestType"
+              name="handleRequestType"
+              value={formData.handleRequestType}
+              onChange={handleChange}
+              disabled={loading}
+              className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
+            >
+              <option value="">Select permission type (optional)</option>
+              <option value="confirm">Can Confirm Requests</option>
+              <option value="approve">Can Approve Requests</option>
             </select>
           </div>
 

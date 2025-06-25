@@ -3,30 +3,45 @@ import { log } from "console";
 /**
  * Request status constants
  */
-export const RequestStatus = {
+const RequestStatus = {
   PENDING: 1,
-  APPROVED: 2,
-  REJECTED: 3,
-  CANCELLED: 4,
+  CONFIRMED: 2,
+  APPROVED: 3,
+  REJECTED: 4,
+  CANCELLED: 5,
   
   // Helper functions
-  getStatusText: function(statusCode: number): string {
-    switch(statusCode) {
-      case 1: return 'pending';
-      case 2: return 'approved';
-      case 3: return 'rejected';
-      case 4: return 'cancelled';
-      default: return 'unknown';
+  getStatusText: (statusCode: number): string => {
+    switch (statusCode) {
+      case RequestStatus.PENDING:
+        return 'pending';
+      case RequestStatus.CONFIRMED:
+        return 'confirmed';
+      case RequestStatus.APPROVED:
+        return 'approved';
+      case RequestStatus.REJECTED:
+        return 'rejected';
+      case RequestStatus.CANCELLED:
+        return 'cancelled';
+      default:
+        return 'unknown';
     }
   },
   
-  getStatusCode: function(statusText: string): number {
-    switch(statusText) {
-      case 'pending': return 1;
-      case 'approved': return 2;
-      case 'rejected': return 3;
-      case 'cancelled': return 4;
-      default: return 1; // Default to pending
+  getStatusCode: (statusText: string): number => {
+    switch (statusText.toLowerCase()) {
+      case 'pending':
+        return RequestStatus.PENDING;
+      case 'confirmed':
+        return RequestStatus.CONFIRMED;
+      case 'approved':
+        return RequestStatus.APPROVED;
+      case 'rejected':
+        return RequestStatus.REJECTED;
+      case 'cancelled':
+        return RequestStatus.CANCELLED;
+      default:
+        return -1;
     }
   }
 };

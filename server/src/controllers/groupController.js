@@ -10,11 +10,22 @@ exports.createGroup = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, description, managerId, parentGroupId } = req.body;
+    const { name, description, managerId, parentGroupId, handleRequestType } =
+      req.body;
 
     // Only admin can create groups
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Không có quyền tạo nhóm" });
+    }
+
+    // Validate handleRequestType
+    if (
+      !handleRequestType ||
+      !["confirm", "approve"].includes(handleRequestType)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Loại xử lý yêu cầu không hợp lệ" });
     }
 
     // Verify manager exists
@@ -39,6 +50,7 @@ exports.createGroup = async (req, res) => {
       description,
       manager: managerId,
       parentGroup: parentGroupId,
+      handleRequestType,
     });
 
     await group.save();
@@ -60,7 +72,7 @@ exports.createGroup = async (req, res) => {
     res.status(201).json(group);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Lỗi lấy nhóm" });
+    res.status(500).json({ message: "Lỗi tạo nhóm" });
   }
 };
 
@@ -162,7 +174,8 @@ exports.updateGroup = async (req, res) => {
     }
 
     const { groupId } = req.params;
-    const { name, description, managerId, parentGroupId } = req.body;
+    const { name, description, managerId, parentGroupId, handleRequestType } =
+      req.body;
 
     // Only admin can update groups
     if (req.user.role !== "admin") {
@@ -172,6 +185,16 @@ exports.updateGroup = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Nhóm không tồn tại" });
+    }
+
+    // Validate handleRequestType if provided
+    if (
+      handleRequestType &&
+      !["confirm", "approve"].includes(handleRequestType)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Loại xử lý yêu cầu không hợp lệ" });
     }
 
     // Verify manager exists if provided
@@ -201,6 +224,9 @@ exports.updateGroup = async (req, res) => {
     group.name = name || group.name;
     group.description =
       description !== undefined ? description : group.description;
+    if (handleRequestType) {
+      group.handleRequestType = handleRequestType;
+    }
 
     if (managerId !== undefined) {
       // Remove old manager's group reference
@@ -241,7 +267,7 @@ exports.updateGroup = async (req, res) => {
     res.json(updatedGroup);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Lỗi lấy nhóm" });
+    res.status(500).json({ message: "Lỗi cập nhật nhóm" });
   }
 };
 

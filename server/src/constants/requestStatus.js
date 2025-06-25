@@ -1,45 +1,47 @@
 /**
  * Request status constants
  */
-module.exports = {
+const RequestStatus = {
   PENDING: 1,
-  APPROVED: 2,
-  REJECTED: 3,
-  CANCELLED: 4,
+  CONFIRMED: 2,
+  APPROVED: 3,
+  REJECTED: 4,
+  CANCELLED: 5,
 
   // Helper functions
-  getStatusText: function (statusCode) {
-    switch (statusCode) {
+  getStatusText: (code) => {
+    switch (code) {
       case 1:
-        return "pending";
+        return "Pending";
       case 2:
-        return "approved";
+        return "Confirmed";
       case 3:
-        return "rejected";
+        return "Approved";
       case 4:
-        return "cancelled";
+        return "Rejected";
+      case 5:
+        return "Cancelled";
       default:
-        return "unknown";
+        return "Pending";
     }
   },
 
-  getStatusCode: function (statusText) {
-    // Handle undefined or null status values
-    if (!statusText) {
-      return this.PENDING; // Default to pending if status is undefined/null
-    }
-
-    switch (statusText) {
+  getStatusCode: (status) => {
+    switch (status.toLowerCase()) {
       case "pending":
         return 1;
-      case "approved":
+      case "confirmed":
         return 2;
-      case "rejected":
+      case "approved":
         return 3;
-      case "cancelled":
+      case "rejected":
         return 4;
+      case "cancelled":
+        return 5;
       default:
-        return 1; // Default to pending
+        return 1;
     }
   },
 };
+
+module.exports = RequestStatus;

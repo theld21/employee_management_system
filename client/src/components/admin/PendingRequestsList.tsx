@@ -1,8 +1,21 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import { Modal } from '@/components/ui/modal';
+
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+}
+
+interface ProcessInfo {
+  user: User;
+  date: string;
+  comment?: string;
+  reason?: string;
+}
 
 interface Request {
   _id: string;
@@ -10,15 +23,110 @@ interface Request {
   startTime: string;
   endTime: string;
   reason: string;
-  status: string;
+  status: number; // 1: pending, 2: confirmed, 3: approved, 4: rejected, 5: cancelled
   createdAt: string;
-    user: {
+  user: {
     _id: string;
-      firstName: string;
-      lastName: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
+  confirmedBy?: ProcessInfo;
+  approvedBy?: ProcessInfo;
+  rejectedBy?: ProcessInfo;
+  cancelledBy?: ProcessInfo;
 }
+
+// Constants for request status
+const RequestStatus = {
+  PENDING: 1,
+  CONFIRMED: 2,
+  APPROVED: 3,
+  REJECTED: 4,
+  CANCELLED: 5
+} as const;
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+};
+
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const getStatusText = (status: number) => {
+  switch (status) {
+    case RequestStatus.PENDING:
+      return 'Chờ xác nhận';
+    case RequestStatus.CONFIRMED:
+      return 'Đã xác nhận';
+    case RequestStatus.APPROVED:
+      return 'Đã duyệt';
+    case RequestStatus.REJECTED:
+      return 'Đã từ chối';
+    case RequestStatus.CANCELLED:
+      return 'Đã hủy';
+    default:
+      return 'Không xác định';
+  }
+};
+
+const getStatusColor = (status: number) => {
+  switch (status) {
+    case RequestStatus.PENDING:
+      return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30';
+    case RequestStatus.CONFIRMED:
+      return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30';
+    case RequestStatus.APPROVED:
+      return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+    case RequestStatus.REJECTED:
+      return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+    case RequestStatus.CANCELLED:
+      return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30';
+    default:
+      return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30';
+  }
+};
+
+const getProcessInfo = (request: Request) => {
+  if (request.cancelledBy) {
+    return {
+      action: 'Đã hủy',
+      user: `${request.cancelledBy.user.firstName} ${request.cancelledBy.user.lastName}`,
+      date: formatDateTime(request.cancelledBy.date),
+      note: request.cancelledBy.reason
+    };
+  }
+  if (request.rejectedBy) {
+    return {
+      action: 'Đã từ chối',
+      user: `${request.rejectedBy.user.firstName} ${request.rejectedBy.user.lastName}`,
+      date: formatDateTime(request.rejectedBy.date),
+      note: request.rejectedBy.comment
+    };
+  }
+  if (request.approvedBy) {
+    return {
+      action: 'Đã duyệt',
+      user: `${request.approvedBy.user.firstName} ${request.approvedBy.user.lastName}`,
+      date: formatDateTime(request.approvedBy.date),
+      note: request.approvedBy.comment
+    };
+  }
+  if (request.confirmedBy) {
+    return {
+      action: 'Đã xác nhận',
+      user: `${request.confirmedBy.user.firstName} ${request.confirmedBy.user.lastName}`,
+      date: formatDateTime(request.confirmedBy.date),
+      note: request.confirmedBy.comment
+    };
+  }
+  return null;
+};
 
 interface PendingRequestsListProps {
   requestsUpdated: boolean;
@@ -29,10 +137,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   requestsUpdated,
   onRequestProcessed,
 }) => {
-  const { user } = useAuth();
   const [pendingRequests, setPendingRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [managerType, setManagerType] = useState<'confirm' | 'approve' | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,7 +150,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null);
+  const [currentAction, setCurrentAction] = useState<'confirm' | 'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
@@ -71,6 +179,8 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         setTotalItems(data.pagination.total);
         setTotalPages(data.pagination.totalPages);
         setCurrentPage(data.pagination.page);
+        // Set manager type
+        setManagerType(data.managerType || null);
       } else if (Array.isArray(data)) {
         console.log('Using array format, length:', data.length);
         // Old format (direct array of requests)
@@ -121,18 +231,6 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
     fetchPendingRequests(1, newSize);
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  };
-
   const formatRequestType = (type: string) => {
     switch (type) {
       case 'work-time':
@@ -160,7 +258,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
     setSelectedRequest(null);
   };
 
-  const handleOpenModal = (requestId: string, action: 'approve' | 'reject', e: React.MouseEvent) => {
+  const handleOpenModal = (requestId: string, action: 'confirm' | 'approve' | 'reject', e: React.MouseEvent) => {
     // Prevent click from propagating to the row handler
     e.stopPropagation();
     setCurrentRequestId(requestId);
@@ -227,21 +325,45 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
     }
   };
 
-  if (!user || !['admin', 'manager'].includes(user.role)) {
-    return (
-      <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
-        <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
-            Bạn không có quyền xem trang này.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const getActionButtonText = (request: Request) => {
+    // Nếu là manager confirm và request đang pending
+    if (managerType === 'confirm' && request.status === 1) {
+      return 'Xác nhận';
+    }
+    // Nếu là manager approve và request đã confirmed
+    if (managerType === 'approve' && request.status === 2) {
+      return 'Duyệt';
+    }
+    return '';
+  };
+
+  const canProcessRequest = (request: Request) => {
+    // Manager confirm chỉ có thể xử lý request pending
+    if (managerType === 'confirm') {
+      return request.status === 1; // PENDING
+    }
+    // Manager approve chỉ có thể xử lý request confirmed
+    if (managerType === 'approve') {
+      return request.status === 2; // CONFIRMED
+    }
+    return false;
+  };
+
+  const getActionForRequest = (request: Request) => {
+    if (managerType === 'confirm' && request.status === 1) {
+      return 'confirm';
+    }
+    if (managerType === 'approve' && request.status === 2) {
+      return 'approve';
+    }
+    return null;
+  };
 
   return (
     <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
-      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">Yêu cầu chờ duyệt</h3>
+      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">
+        {managerType === 'confirm' ? 'Yêu cầu chờ xác nhận' : 'Yêu cầu chờ duyệt'}
+      </h3>
       
       {successMessage && (
         <div className="mb-4 rounded-lg bg-green-100 px-4 py-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -271,6 +393,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Người dùng</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Loại</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Trạng thái</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Hành động</th>
                 </tr>
               </thead>
@@ -302,21 +425,35 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                         </div>
                     </td>
                     <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                        {getStatusText(request.status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button
-                          onClick={(e) => handleOpenModal(request._id, 'approve', e)}
-                          disabled={processingRequest === request._id}
-                          className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
-                        >
-                          Duyệt
-                        </button>
-                        <button
-                          onClick={(e) => handleOpenModal(request._id, 'reject', e)}
-                          disabled={processingRequest === request._id}
-                          className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
-                        >
-                          Từ chối
-                        </button>
+                        {canProcessRequest(request) && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                const action = getActionForRequest(request);
+                                if (action) {
+                                  handleOpenModal(request._id, action, e);
+                                }
+                              }}
+                              disabled={processingRequest === request._id}
+                              className="px-3 py-1.5 rounded-lg bg-green-500 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
+                            >
+                              {getActionButtonText(request)}
+                            </button>
+                            <button
+                              onClick={(e) => handleOpenModal(request._id, 'reject', e)}
+                              disabled={processingRequest === request._id}
+                              className="px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                            >
+                              Từ chối
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -406,7 +543,8 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         className="max-w-[500px] p-5 lg:p-8"
       >
         <h4 className="mb-4 text-lg font-medium text-gray-800 dark:text-white/90">
-          {currentAction === 'approve' ? 'Duyệt yêu cầu' : 'Từ chối yêu cầu'}
+          {currentAction === 'approve' ? 'Duyệt yêu cầu' : 
+           currentAction === 'confirm' ? 'Xác nhận yêu cầu' : 'Từ chối yêu cầu'}
         </h4>
         
         {modalError && (
@@ -429,28 +567,30 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
         </div>
         
         <div className="flex justify-end gap-3">
-              <button
-                onClick={handleCloseModal}
+          <button
+            onClick={handleCloseModal}
             className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleProcessRequest}
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleProcessRequest}
             disabled={!!processingRequest}
             className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
-              currentAction === 'approve' 
-                ? 'bg-green-500 hover:bg-green-600' 
-                : 'bg-red-500 hover:bg-red-600'
+              currentAction === 'reject' 
+                ? 'bg-red-500 hover:bg-red-600'
+                : 'bg-green-500 hover:bg-green-600'
             } disabled:opacity-70`}
           >
             {processingRequest 
               ? 'Đang xử lý...' 
-              : currentAction === 'approve' 
-                ? 'Duyệt' 
-                : 'Từ chối'
+              : currentAction === 'approve'
+                ? 'Duyệt'
+                : currentAction === 'confirm'
+                  ? 'Xác nhận'
+                  : 'Từ chối'
             }
-              </button>
+          </button>
         </div>
       </Modal>
       
@@ -487,7 +627,9 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
               
               <div>
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trạng thái</h4>
-                <p className="text-gray-800 dark:text-gray-300">Chờ duyệt</p>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedRequest.status)}`}>
+                  {getStatusText(selectedRequest.status)}
+                </span>
               </div>
             </div>
             
@@ -502,32 +644,58 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                 </p>
           </div>
         </div>
-            
             <div className="mb-4">
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lý do</h4>
               <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
             </div>
             
+            {/* Add Process Info */}
+            {getProcessInfo(selectedRequest) && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thông tin xử lý</h4>
+                <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-gray-800 dark:text-gray-300">
+                    <span className="font-medium">Hành động:</span> {getProcessInfo(selectedRequest)?.action}
+                  </p>
+                  <p className="text-gray-800 dark:text-gray-300">
+                    <span className="font-medium">Người xử lý:</span> {getProcessInfo(selectedRequest)?.user}
+                  </p>
+                  <p className="text-gray-800 dark:text-gray-300">
+                    <span className="font-medium">Thời gian:</span> {getProcessInfo(selectedRequest)?.date}
+                  </p>
+                  {getProcessInfo(selectedRequest)?.note && (
+                    <p className="text-gray-800 dark:text-gray-300">
+                      <span className="font-medium">Ghi chú:</span> {getProcessInfo(selectedRequest)?.note}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-end gap-3 mt-6">
-            <button
+              <button
                 onClick={closeDetailModal}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Đóng
-            </button>
-              <button
-                onClick={handleRejectFromDetails}
-                className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600"
               >
-                Từ chối
+                Đóng
               </button>
-              <button
-                onClick={handleApproveFromDetails}
-                className="px-4 py-2 rounded-lg bg-green-500 text-sm font-medium text-white hover:bg-green-600"
-              >
-                Duyệt
-              </button>
-          </div>
+              {canProcessRequest(selectedRequest) && (
+                <>
+                  <button
+                    onClick={handleRejectFromDetails}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600"
+                  >
+                    Từ chối
+                  </button>
+                  <button
+                    onClick={handleApproveFromDetails}
+                    className="px-4 py-2 rounded-lg bg-green-500 text-sm font-medium text-white hover:bg-green-600"
+                  >
+                    {getActionButtonText(selectedRequest)}
+                  </button>
+                </>
+              )}
+            </div>
         </div>
       )}
       </Modal>

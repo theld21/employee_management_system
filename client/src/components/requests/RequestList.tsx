@@ -15,6 +15,14 @@ interface Request {
   reason: string;
   status: number;
   createdAt: string;
+  confirmedBy?: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    date: string;
+    comment: string;
+  };
   approvedBy?: {
     user: {
       firstName: string;
@@ -173,12 +181,14 @@ const RequestList: React.FC = () => {
     switch (status) {
       case RequestStatus.PENDING:
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case RequestStatus.CONFIRMED:
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case RequestStatus.APPROVED:
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       case RequestStatus.REJECTED:
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       case RequestStatus.CANCELLED:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
     }
@@ -187,20 +197,33 @@ const RequestList: React.FC = () => {
   const formatRequestType = (type: string) => {
     switch (type) {
       case 'work-time':
-        return 'Work Time Update';
+        return 'Cập nhật giờ làm';
       case 'leave-request':
-        return 'Leave Request';
+        return 'Nghỉ phép';
       case 'wfh-request':
-        return 'Work From Home';
+        return 'Làm việc từ xa';
       case 'overtime':
-        return 'Overtime';
+        return 'Làm thêm giờ';
       default:
         return type;
     }
   };
 
   const formatStatus = (status: number) => {
-    return RequestStatus.getStatusText(status).charAt(0).toUpperCase() + RequestStatus.getStatusText(status).slice(1);
+    switch (status) {
+      case RequestStatus.PENDING:
+        return 'Chờ xác nhận';
+      case RequestStatus.CONFIRMED:
+        return 'Đã xác nhận';
+      case RequestStatus.APPROVED:
+        return 'Đã duyệt';
+      case RequestStatus.REJECTED:
+        return 'Từ chối';
+      case RequestStatus.CANCELLED:
+        return 'Đã hủy';
+      default:
+        return 'Không xác định';
+    }
   };
 
   // Simplified cancel request handler
@@ -437,6 +460,23 @@ const RequestList: React.FC = () => {
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lý do</h4>
               <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
             </div>
+            
+            {selectedRequest.status === RequestStatus.CONFIRMED && selectedRequest.confirmedBy && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">Thông tin xác nhận</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  <span className="font-medium">Xác nhận bởi:</span> {selectedRequest.confirmedBy.user.firstName} {selectedRequest.confirmedBy.user.lastName}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Xác nhận vào:</span> {formatDateTime(selectedRequest.confirmedBy.date)}
+                </p>
+                {selectedRequest.confirmedBy.comment && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    <span className="font-medium">Ghi chú:</span> {selectedRequest.confirmedBy.comment}
+                  </p>
+                )}
+              </div>
+            )}
             
             {selectedRequest.status === RequestStatus.APPROVED && selectedRequest.approvedBy && (
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">

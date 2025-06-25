@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
     name: "Yêu cầu",
     subItems: [
       { name: "Yêu cầu của tôi", path: "/requests" },
-      { name: "Yêu cầu cần duyệt", path: "/admin/requests" },
+      { name: "Yêu cầu cần duyệt", path: "/confirm-requests" },
     ],
   },
   {

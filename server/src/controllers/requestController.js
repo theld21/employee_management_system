@@ -96,10 +96,38 @@ exports.getUserRequests = async (req, res) => {
   }
 };
 
-// Get pending requests that need approval (for managers)
-exports.getPendingRequests = async (req, res) => {
+// Helper function to get all child groups recursively
+async function getAllChildGroups(groupIds) {
+  const allGroups = new Set(groupIds.map((id) => id.toString()));
+  let newGroupsFound = true;
+
+  while (newGroupsFound) {
+    newGroupsFound = false;
+    const groups = await Group.find({
+      parentGroup: { $in: Array.from(allGroups) },
+    });
+
+    for (const group of groups) {
+      if (!allGroups.has(group._id.toString())) {
+        allGroups.add(group._id.toString());
+        newGroupsFound = true;
+      }
+    }
+  }
+
+  return Array.from(allGroups);
+}
+
+// Helper function to get all users from groups
+async function getAllUsersFromGroups(groupIds) {
+  const users = await User.find({ group: { $in: groupIds } });
+  return users.map((user) => user._id);
+}
+
+// Get requests that manager can handle based on their group's handleRequestType
+exports.getRequestsForManager = async (req, res) => {
   try {
-    const { role, id } = req.user;
+    const { id } = req.user;
     const { page = 1, limit = 10 } = req.query;
 
     // Convert page and limit to numbers
@@ -107,85 +135,97 @@ exports.getPendingRequests = async (req, res) => {
     const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
-    // For admins, get all pending requests
-    if (role === "admin") {
-      const total = await Request.countDocuments({
-        status: RequestStatus.PENDING,
-      });
+    // Find the group where the user is a manager
+    const managerGroup = await Group.findOne({ manager: id });
 
-      const requests = await Request.find({ status: RequestStatus.PENDING })
-        .populate("user", "firstName lastName username email group")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum);
-
-      console.log(
-        `[ADMIN PENDING REQUESTS] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
-          total / limitNum
-        )}`
-      );
-
+    if (!managerGroup) {
       return res.json({
-        requests,
+        requests: [],
         pagination: {
-          total,
+          total: 0,
           page: pageNum,
           limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          totalPages: 0,
         },
       });
     }
 
-    // For managers, get pending requests from their group members
-    if (role === "manager") {
-      // Find the manager's groups
-      const managerGroups = await Group.find({ manager: id });
+    // Get all child groups recursively
+    const allGroupIds = await getAllChildGroups([managerGroup._id]);
 
-      if (!managerGroups || managerGroups.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Không có nhóm nào cho quản lý này" });
-      }
+    // Get all users from these groups
+    const userIds = await getAllUsersFromGroups(allGroupIds);
 
-      // Get users from these groups
-      const userIds = managerGroups.flatMap((group) => group.members);
+    // Build query based on handleRequestType
+    const query = {
+      user: { $in: userIds },
+    };
 
-      const query = {
-        user: { $in: userIds },
-        status: RequestStatus.PENDING,
-      };
-
-      const total = await Request.countDocuments(query);
-
-      const requests = await Request.find(query)
-        .populate("user", "firstName lastName username email")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum);
-
-      console.log(
-        `[MANAGER PENDING REQUESTS] total: ${total}, page: ${pageNum}, limit: ${limitNum}, totalPages: ${Math.ceil(
-          total / limitNum
-        )}`
-      );
-
+    // For confirm managers: show all requests, but can only confirm/reject PENDING ones
+    if (managerGroup.handleRequestType === "confirm") {
+      // No additional status filter - show all requests
+    }
+    // For approve managers: only show CONFIRMED requests that they can approve/reject
+    else if (managerGroup.handleRequestType === "approve") {
+      query.status = RequestStatus.CONFIRMED;
+    }
+    // For other cases (no handleRequestType): don't show any requests
+    else {
       return res.json({
-        requests,
+        requests: [],
         pagination: {
-          total,
+          total: 0,
           page: pageNum,
           limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          totalPages: 0,
         },
       });
     }
 
-    return res
-      .status(403)
-      .json({ message: "Không có quyền truy cập yêu cầu đang chờ" });
+    const total = await Request.countDocuments(query);
+
+    const requests = await Request.find(query)
+      .populate("user", "firstName lastName username email group")
+      .populate({
+        path: "user",
+        populate: {
+          path: "group",
+          select: "name parentGroup",
+        },
+      })
+      .populate({
+        path: "confirmedBy.user",
+        select: "firstName lastName username",
+      })
+      .populate({
+        path: "approvedBy.user",
+        select: "firstName lastName username",
+      })
+      .populate({
+        path: "rejectedBy.user",
+        select: "firstName lastName username",
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    console.log(
+      `[MANAGER REQUESTS] Manager: ${id}, HandleRequestType: ${managerGroup.handleRequestType}, Groups: ${allGroupIds.length}, Users: ${userIds.length}, Total Requests: ${total}`
+    );
+
+    return res.json({
+      requests,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+      managerType: managerGroup.handleRequestType, // Thêm thông tin này để client biết loại manager
+    });
   } catch (error) {
-    console.error("Lỗi lấy yêu cầu đang chờ:", error);
-    res.status(500).json({ message: "Lỗi lấy yêu cầu đang chờ" });
+    console.error("Lỗi lấy danh sách yêu cầu:", error);
+    res.status(500).json({ message: "Lỗi lấy danh sách yêu cầu" });
   }
 };
 
@@ -201,86 +241,136 @@ exports.processRequest = async (req, res) => {
     const { action, comment } = req.body;
     const userId = req.user.id;
 
-    // Verify the user is a manager or admin
-    if (!["admin", "manager"].includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "Không có quyền xử lý yêu cầu này" });
-    }
-
     // Find the request
-    const request = await Request.findById(requestId);
+    const request = await Request.findById(requestId).populate("user", "group");
     if (!request) {
       return res.status(404).json({ message: "Yêu cầu không tồn tại" });
     }
 
-    // Check if the request is already processed
-    if (request.status !== RequestStatus.PENDING) {
-      return res.status(400).json({ message: "Yêu cầu này đã được xử lý" });
+    // Check if the request can be processed
+    if (
+      request.status === RequestStatus.REJECTED ||
+      request.status === RequestStatus.CANCELLED
+    ) {
+      return res.status(400).json({ message: "Yêu cầu này không thể xử lý" });
     }
 
-    // If the processor is a manager, check if they manage the user
-    if (req.user.role === "manager") {
-      const userGroups = await Group.find({
-        manager: userId,
-        members: request.user,
-      });
-
-      if (!userGroups || userGroups.length === 0) {
-        return res
-          .status(403)
-          .json({ message: "Bạn không quản lý người dùng này" });
-      }
+    // Find the group where the user is a manager
+    const managerGroup = await Group.findOne({ manager: userId });
+    if (!managerGroup) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền xử lý yêu cầu này" });
     }
 
-    // Update request status
-    request.status =
-      action === "approve" ? RequestStatus.APPROVED : RequestStatus.REJECTED;
+    // Get all child groups recursively
+    const allGroupIds = await getAllChildGroups([managerGroup._id]);
 
-    if (action === "approve") {
-      request.approvedBy = {
-        user: userId,
-        date: new Date(),
-        comment: comment || "",
-      };
+    // Check if the request's user belongs to any of the managed groups
+    if (!allGroupIds.includes(request.user.group.toString())) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền xử lý yêu cầu này" });
+    }
 
-      // Handle attendance update for work-time requests
-      if (request.type === "work-time") {
-        try {
-          // Get the date part only from startTime
-          const requestDate = new Date(request.startTime);
-          requestDate.setHours(0, 0, 0, 0);
+    // Handle different actions based on handleRequestType
+    switch (action) {
+      case "confirm":
+        // Only managers with confirm permission can confirm PENDING requests
+        if (request.status !== RequestStatus.PENDING) {
+          return res
+            .status(400)
+            .json({ message: "Chỉ có thể xác nhận yêu cầu đang chờ" });
+        }
+        if (managerGroup.handleRequestType !== "confirm") {
+          return res
+            .status(403)
+            .json({ message: "Nhóm của bạn không có quyền xác nhận yêu cầu" });
+        }
+        request.status = RequestStatus.CONFIRMED;
+        request.confirmedBy = {
+          user: userId,
+          date: new Date(),
+          comment: comment || "",
+        };
+        break;
 
-          // Find or create attendance record
-          let attendance = await Attendance.findOne({
-            user: request.user,
-            date: requestDate,
-          });
+      case "approve":
+        // Only managers with approve permission can approve CONFIRMED requests
+        if (request.status !== RequestStatus.CONFIRMED) {
+          return res
+            .status(400)
+            .json({ message: "Chỉ có thể phê duyệt yêu cầu đã được xác nhận" });
+        }
+        if (managerGroup.handleRequestType !== "approve") {
+          return res
+            .status(403)
+            .json({ message: "Nhóm của bạn không có quyền phê duyệt yêu cầu" });
+        }
+        request.status = RequestStatus.APPROVED;
+        request.approvedBy = {
+          user: userId,
+          date: new Date(),
+          comment: comment || "",
+        };
 
-          if (!attendance) {
-            attendance = new Attendance({
-              user: request.user,
+        // Handle attendance update for work-time requests
+        if (request.type === "work-time") {
+          try {
+            const requestDate = new Date(request.startTime);
+            requestDate.setHours(0, 0, 0, 0);
+
+            let attendance = await Attendance.findOne({
+              user: request.user._id,
               date: requestDate,
             });
+
+            if (!attendance) {
+              attendance = new Attendance({
+                user: request.user._id,
+                date: requestDate,
+              });
+            }
+
+            attendance.checkIn = request.startTime;
+            attendance.checkOut = request.endTime;
+
+            await attendance.save();
+          } catch (error) {
+            console.error("Lỗi cập nhật attendance:", error);
           }
-
-          // Update check-in and check-out times
-          attendance.checkIn = request.startTime;
-          attendance.checkOut = request.endTime;
-
-          await attendance.save();
-        } catch (error) {
-          console.error("Lỗi cập nhật attendance:", error);
-          // Don't reject the request approval, but log the error
-          // You might want to notify admins about this error in a production environment
         }
-      }
-    } else {
-      request.rejectedBy = {
-        user: userId,
-        date: new Date(),
-        comment: comment || "",
-      };
+        break;
+
+      case "reject":
+        // Confirm managers can only reject PENDING requests
+        // Approve managers can only reject CONFIRMED requests
+        if (
+          managerGroup.handleRequestType === "confirm" &&
+          request.status !== RequestStatus.PENDING
+        ) {
+          return res
+            .status(400)
+            .json({ message: "Bạn chỉ có thể từ chối yêu cầu đang chờ" });
+        }
+        if (
+          managerGroup.handleRequestType === "approve" &&
+          request.status !== RequestStatus.CONFIRMED
+        ) {
+          return res.status(400).json({
+            message: "Bạn chỉ có thể từ chối yêu cầu đã được xác nhận",
+          });
+        }
+        request.status = RequestStatus.REJECTED;
+        request.rejectedBy = {
+          user: userId,
+          date: new Date(),
+          comment: comment || "",
+        };
+        break;
+
+      default:
+        return res.status(400).json({ message: "Hành động không hợp lệ" });
     }
 
     await request.save();

@@ -32,6 +32,10 @@ const GroupSchema = new mongoose.Schema(
         ref: "Group",
       },
     ],
+    handleRequestType: {
+      type: String,
+      enum: ["confirm", "approve"],
+    },
     isActive: {
       type: Boolean,
       default: true,
