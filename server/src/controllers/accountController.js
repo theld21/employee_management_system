@@ -94,8 +94,8 @@ exports.createAccount = async (req, res) => {
       return res.status(400).json({ message: "Tài khoản đã tồn tại" });
     }
 
-    // Create new user
-    const user = new User({
+    // Create user object with basic fields
+    const userData = {
       username,
       email,
       password,
@@ -108,11 +108,17 @@ exports.createAccount = async (req, res) => {
       address,
       position,
       role: role || "user",
-      group,
       status: "active",
       startDate,
-    });
+    };
 
+    // Only add group if it's a valid non-empty value
+    if (group && group.trim()) {
+      userData.group = group;
+    }
+
+    // Create new user
+    const user = new User(userData);
     await user.save();
 
     // Return user without password and with group populated

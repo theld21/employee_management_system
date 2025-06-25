@@ -58,13 +58,13 @@ const AttendanceCalendar = () => {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
+  
   const formatTime = useCallback((timeString?: string): string => {
     if (!timeString) return 'N/A';
     const date = new Date(timeString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
-
+  
   const formatDate = useCallback((date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -82,7 +82,7 @@ const AttendanceCalendar = () => {
         failureCallback(new Error('No authorization token'));
         return;
       }
-
+      
       const params = new URLSearchParams({
         startDate: info.startStr,
         endDate: info.endStr,
@@ -114,22 +114,22 @@ const AttendanceCalendar = () => {
 
         const attendance = attendanceMap.get(formattedDate);
         if (attendance) {
-          const isToday = formattedDate === today;
-          attendanceData.push({
-            id: attendance._id + "_in",
-            date: formattedDate,
+        const isToday = formattedDate === today;
+        attendanceData.push({
+          id: attendance._id + "_in",
+          date: formattedDate,
             color: getCheckInColor(attendance.checkIn),
             extendedProps: { time: attendance.checkIn }
-          });
-
+        });
+        
           if (attendance.checkOut || !isToday) {
-            attendanceData.push({
-              id: attendance._id + "_out",
-              date: formattedDate,
+          attendanceData.push({
+            id: attendance._id + "_out",
+            date: formattedDate,
               color: getCheckOutColor(attendance.checkIn, attendance.checkOut),
               extendedProps: { time: attendance.checkOut }
-            });
-          }
+          });
+        }
         } else {
           attendanceData.push(
             {
@@ -147,14 +147,14 @@ const AttendanceCalendar = () => {
           );
         }
       }
-
+      
       successCallback(attendanceData);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
       failureCallback(error instanceof Error ? error : new Error(String(error)));
     }
   }, [token, formatDate]);
-
+  
   const renderEventContent = useCallback((eventInfo: EventContentArg) => {
     const { extendedProps } = eventInfo.event;
     const time = extendedProps.time ? formatTime(extendedProps.time) : 'K';
@@ -217,7 +217,7 @@ const AttendanceCalendar = () => {
   const hasCheckedOut = todayAttendance && todayAttendance.checkOut;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6">      
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch chấm công</h3>

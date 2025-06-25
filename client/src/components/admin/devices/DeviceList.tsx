@@ -117,7 +117,7 @@ export const DeviceList: React.FC = () => {
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
       fetchDevices();
     }
   };

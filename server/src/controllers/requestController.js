@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const Request = require("../models/Request");
 const User = require("../models/User");
 const Group = require("../models/Group");
+const Attendance = require("../models/Attendance");
 const RequestStatus = require("../constants/requestStatus");
 
 // Create a new request
@@ -242,6 +243,38 @@ exports.processRequest = async (req, res) => {
         date: new Date(),
         comment: comment || "",
       };
+
+      // Handle attendance update for work-time requests
+      if (request.type === "work-time") {
+        try {
+          // Get the date part only from startTime
+          const requestDate = new Date(request.startTime);
+          requestDate.setHours(0, 0, 0, 0);
+
+          // Find or create attendance record
+          let attendance = await Attendance.findOne({
+            user: request.user,
+            date: requestDate,
+          });
+
+          if (!attendance) {
+            attendance = new Attendance({
+              user: request.user,
+              date: requestDate,
+            });
+          }
+
+          // Update check-in and check-out times
+          attendance.checkIn = request.startTime;
+          attendance.checkOut = request.endTime;
+
+          await attendance.save();
+        } catch (error) {
+          console.error("Lỗi cập nhật attendance:", error);
+          // Don't reject the request approval, but log the error
+          // You might want to notify admins about this error in a production environment
+        }
+      }
     } else {
       request.rejectedBy = {
         user: userId,
