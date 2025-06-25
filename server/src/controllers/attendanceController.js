@@ -37,7 +37,7 @@ exports.checkIn = async (req, res) => {
       },
     });
 
-    if (attendance && attendance.checkIn.time) {
+    if (attendance && attendance.checkIn) {
       return res.status(400).json({ message: "Bạn đã điểm danh hôm nay" });
     }
 
@@ -46,14 +46,10 @@ exports.checkIn = async (req, res) => {
       attendance = new Attendance({
         user: userId,
         date: startOfDay,
-        checkIn: {
-          time: now,
-        },
+        checkIn: now,
       });
     } else {
-      attendance.checkIn = {
-        time: now,
-      };
+      attendance.checkIn = now;
     }
 
     await attendance.save();
@@ -86,20 +82,18 @@ exports.checkOut = async (req, res) => {
       },
     });
 
-    if (!attendance || !attendance.checkIn.time) {
+    if (!attendance || !attendance.checkIn) {
       return res.status(400).json({ message: "Bạn cần điểm danh trước" });
     }
 
-    if (attendance.checkOut && attendance.checkOut.time) {
+    if (attendance.checkOut) {
       return res
         .status(400)
         .json({ message: "You have already checked out today" });
     }
 
     // Update checkout time
-    attendance.checkOut = {
-      time: now,
-    };
+    attendance.checkOut = now;
 
     await attendance.save();
 
@@ -210,22 +204,6 @@ exports.getTeamAttendance = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi máy chủ" });
-  }
-};
-
-// Helper function to get status color
-const getStatusColor = (status) => {
-  switch (status) {
-    case "present":
-      return "#4CAF50"; // Green
-    case "late":
-      return "#FFC107"; // Yellow
-    case "absent":
-      return "#F44336"; // Red
-    case "half-day":
-      return "#FF9800"; // Orange
-    default:
-      return "#9E9E9E"; // Grey
   }
 };
 

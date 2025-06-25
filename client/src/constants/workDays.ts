@@ -1,6 +1,12 @@
-// Cấu hình ngày làm việc của công ty
-// Mặc định: làm việc từ thứ 2 đến thứ 6
-// Nếu muốn làm đến 12h thứ 7, sửa logic bên dưới
+export const WORK_START_HOUR = 8;
+export const WORK_START_MINUTE = 30;
+export const WORK_END_HOUR = 17;
+export const WORK_END_MINUTE = 30;
+export const LUNCH_START_HOUR = 12;
+export const LUNCH_START_MINUTE = 0;
+export const LUNCH_END_HOUR = 13;
+export const LUNCH_END_MINUTE = 30;
+export const WORK_HOURS_REQUIRED = 8;
 
 export function isWorkDay(date: Date): boolean {
   const day = date.getDay();
@@ -9,4 +15,47 @@ export function isWorkDay(date: Date): boolean {
   // Nếu muốn làm đến 12h thứ 7:
   // if (day === 6 && date.getHours() < 12) return true;
   return false;
+}
+
+// Hàm lấy màu cho checkin
+export function getCheckInColor(checkIn?: string): string {
+  if (!checkIn) return '#9E9E9E';
+  const checkInDate = new Date(checkIn);
+  const workStart = new Date(checkInDate);
+  workStart.setHours(WORK_START_HOUR, WORK_START_MINUTE, 0, 0);
+  return checkInDate > workStart ? '#F44336' : '#4CAF50';
+}
+
+// Hàm lấy màu cho checkout
+export function getCheckOutColor(checkIn?: string, checkOut?: string): string {
+  if (!checkOut) return '#F44336';
+  const checkOutDate = new Date(checkOut);
+  const workEnd = new Date(checkOutDate);
+  workEnd.setHours(WORK_END_HOUR, WORK_END_MINUTE, 0, 0);
+
+  // Nếu checkout trước giờ kết thúc thì màu đỏ
+  if (checkOutDate < workEnd) return '#F44336';
+
+  // Nếu có checkin, tính tổng thời gian làm việc (trừ nghỉ trưa)
+  if (checkIn) {
+    const checkInDate = new Date(checkIn);
+    let totalMs = checkOutDate.getTime() - checkInDate.getTime();
+    // Trừ thời gian nghỉ trưa nếu có giao với ca làm
+    const lunchStart = new Date(checkInDate);
+    lunchStart.setHours(LUNCH_START_HOUR, LUNCH_START_MINUTE, 0, 0);
+    const lunchEnd = new Date(checkInDate);
+    lunchEnd.setHours(LUNCH_END_HOUR, LUNCH_END_MINUTE, 0, 0);
+    // Nếu checkin < lunchEnd và checkout > lunchStart thì có giao với nghỉ trưa
+    if (checkInDate < lunchEnd && checkOutDate > lunchStart) {
+      // Tính phần giao nhau giữa [checkIn, checkOut] và [lunchStart, lunchEnd]
+      const overlapStart = Math.max(checkInDate.getTime(), lunchStart.getTime());
+      const overlapEnd = Math.min(checkOutDate.getTime(), lunchEnd.getTime());
+      if (overlapEnd > overlapStart) {
+        totalMs -= (overlapEnd - overlapStart);
+      }
+    }
+    const totalHours = totalMs / (1000 * 60 * 60);
+    if (totalHours < WORK_HOURS_REQUIRED) return '#F44336';
+  }
+  return '#4CAF50';
 } 
