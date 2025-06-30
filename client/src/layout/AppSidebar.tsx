@@ -73,6 +73,11 @@ const adminItems: NavItem[] = [
       { name: "Quản lý nhóm", path: "/admin/groups" },
     ],
   },
+  {
+    icon: <FileIcon />,
+    name: "Báo cáo",
+    path: "/admin/reports",
+  },
 ];
 
 const AppSidebar: React.FC = () => {

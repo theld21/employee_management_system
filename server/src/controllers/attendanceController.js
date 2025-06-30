@@ -227,10 +227,198 @@ exports.getTeamAttendance = async (req, res) => {
   }
 };
 
+exports.getAttendanceReport = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        message: "Tháng và năm là bắt buộc",
+      });
+    }
+
+    // Tạo khoảng thời gian cho tháng
+    const startDate = new Date(year, month - 1, 1); // month is 0-indexed
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
+
+    // Lấy danh sách tất cả user
+    const User = require("../models/User");
+    const users = await User.find({ role: { $ne: "admin" } })
+      .select("name email employeeId")
+      .sort({ name: 1 });
+
+    // Lấy tất cả attendance trong tháng
+    const attendances = await Attendance.find({
+      date: { $gte: startDate, $lte: endDate },
+    }).populate("user", "name email employeeId");
+
+    // Lấy tất cả leave requests đã approved trong tháng
+    const requests = await Request.find({
+      type: "leave-request",
+      status: 3, // approved
+      $or: [
+        {
+          startTime: { $gte: startDate, $lte: endDate },
+        },
+        {
+          endTime: { $gte: startDate, $lte: endDate },
+        },
+        {
+          $and: [
+            { startTime: { $lte: startDate } },
+            { endTime: { $gte: endDate } },
+          ],
+        },
+      ],
+    }).populate("user", "name email employeeId");
+
+    // Tạo map attendance theo user và ngày
+    const attendanceMap = new Map();
+    attendances.forEach((att) => {
+      const userId = att.user._id.toString();
+      const dateKey = att.date.toISOString().split("T")[0];
+      if (!attendanceMap.has(userId)) {
+        attendanceMap.set(userId, new Map());
+      }
+      attendanceMap.get(userId).set(dateKey, att);
+    });
+
+    // Tạo map leave requests theo user và ngày
+    const leaveMap = new Map();
+    requests.forEach((req) => {
+      const userId = req.user._id.toString();
+      const startDate = new Date(req.startTime);
+      const endDate = new Date(req.endTime);
+
+      if (!leaveMap.has(userId)) {
+        leaveMap.set(userId, new Map());
+      }
+
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateKey = d.toISOString().split("T")[0];
+        if (
+          d >= new Date(year, month - 1, 1) &&
+          d <= new Date(year, month, 0)
+        ) {
+          // Tính leave type cho ngày này
+          const leaveStart = new Date(
+            Math.max(d.getTime(), startDate.getTime())
+          );
+          const leaveEnd = new Date(
+            Math.min(new Date(d).setHours(23, 59, 59, 999), endDate.getTime())
+          );
+          const noonStart = new Date(d);
+          noonStart.setHours(12, 0, 0, 0);
+          const noonEnd = new Date(d);
+          noonEnd.setHours(13, 0, 0, 0);
+          const isFullDay = leaveStart < noonEnd && leaveEnd > noonStart;
+
+          const currentLeave = leaveMap.get(userId).get(dateKey);
+          if (!currentLeave || currentLeave < (isFullDay ? 1 : 0.5)) {
+            leaveMap.get(userId).set(dateKey, isFullDay ? 1 : 0.5);
+          }
+        }
+      }
+    });
+
+    // Tính toán dữ liệu cho từng user
+    const reportData = users.map((user) => {
+      const userId = user._id.toString();
+      const userAttendances = attendanceMap.get(userId) || new Map();
+      const userLeaves = leaveMap.get(userId) || new Map();
+
+      const dailyData = [];
+      let totalDays = 0;
+
+      // Lặp qua từng ngày trong tháng
+      for (
+        let d = new Date(year, month - 1, 1);
+        d <= new Date(year, month, 0);
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateKey = d.toISOString().split("T")[0];
+        const isWorkDay = d.getDay() >= 1 && d.getDay() <= 5; // Mon-Fri
+
+        if (!isWorkDay) {
+          dailyData.push({
+            date: dateKey,
+            day: d.getDate(),
+            work: 0,
+            leave: 0,
+            note: "Cuối tuần",
+          });
+          continue;
+        }
+
+        const attendance = userAttendances.get(dateKey);
+        const leaveValue = userLeaves.get(dateKey) || 0;
+
+        let workDays = 0;
+        let note = "";
+
+        if (leaveValue > 0) {
+          workDays = leaveValue; // Leave counts as work days
+          note = leaveValue === 1 ? "Nghỉ 1P" : "Nghỉ 1/2P";
+          totalDays += leaveValue;
+        } else if (attendance && attendance.checkIn && attendance.checkOut) {
+          workDays = 1;
+          note = "Đi làm";
+          totalDays += 1;
+        } else if (attendance && attendance.checkIn) {
+          workDays = 0.5;
+          note = "Thiếu checkout";
+          totalDays += 0.5;
+        } else {
+          workDays = 0;
+          note = "Vắng";
+        }
+
+        dailyData.push({
+          date: dateKey,
+          day: d.getDate(),
+          work: workDays,
+          leave: leaveValue,
+          note: note,
+        });
+      }
+
+      return {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          employeeId: user.employeeId,
+        },
+        dailyData,
+        totalDays,
+      };
+    });
+
+    res.json({
+      month: parseInt(month),
+      year: parseInt(year),
+      startDate,
+      endDate,
+      data: reportData,
+    });
+  } catch (error) {
+    console.error("Error getting attendance report:", error);
+    res.status(500).json({
+      message: "Lỗi máy chủ",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   checkIn: exports.checkIn,
   checkOut: exports.checkOut,
   getUserAttendance: exports.getUserAttendance,
   getTodayAttendance: exports.getTodayAttendance,
   getTeamAttendance: exports.getTeamAttendance,
+  getAttendanceReport: exports.getAttendanceReport,
 };

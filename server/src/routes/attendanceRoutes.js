@@ -35,4 +35,12 @@ router.get(
   attendanceController.getTeamAttendance
 );
 
+// Get attendance report for export (admin only)
+router.get(
+  "/report",
+  auth,
+  authorize("admin"),
+  attendanceController.getAttendanceReport
+);
+
 module.exports = router;
