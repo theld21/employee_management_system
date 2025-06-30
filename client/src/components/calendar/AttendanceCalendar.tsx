@@ -76,6 +76,7 @@ const AttendanceCalendar = () => {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [leaveMap, setLeaveMap] = useState<Map<string, number>>(new Map());
 
   const formatTime = useCallback((timeString?: string): string => {
     if (!timeString) return 'N/A';
@@ -241,6 +242,7 @@ const AttendanceCalendar = () => {
         }
       }
 
+      setLeaveMap(new Map(leaveMap));
       successCallback(eventData);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
@@ -338,6 +340,13 @@ const AttendanceCalendar = () => {
   const hasCheckedIn = todayAttendance && todayAttendance.checkIn;
   const hasCheckedOut = todayAttendance && todayAttendance.checkOut;
 
+  // Tính leaveValue cho hôm nay
+  const todayDateObj = new Date();
+  todayDateObj.setHours(0, 0, 0, 0);
+  const todayKey = formatDate(todayDateObj);
+  const todayLeaveValue = leaveMap?.get ? (leaveMap.get(todayKey) ?? 0) : 0;
+  const todayIsWorkDay = isWorkDay(todayDateObj);
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
@@ -366,7 +375,7 @@ const AttendanceCalendar = () => {
                 </div>
               )}
 
-              {!hasCheckedIn && (
+              {(!hasCheckedIn && todayLeaveValue !== 1 && todayIsWorkDay) && (
                 <button
                   onClick={handleCheckIn}
                   disabled={checkInLoading}
@@ -376,7 +385,7 @@ const AttendanceCalendar = () => {
                 </button>
               )}
 
-              {hasCheckedIn && !hasCheckedOut && (
+              {(hasCheckedIn && !hasCheckedOut && todayLeaveValue !== 1 && todayIsWorkDay) && (
                 <button
                   onClick={handleCheckOut}
                   disabled={checkOutLoading}

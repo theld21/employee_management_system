@@ -110,7 +110,7 @@ exports.getUserAttendance = async (req, res) => {
     let requestQuery = {
       user: userId,
       type: "leave-request",
-      status: { $in: [2, 3] }, // Only confirmed and approved requests
+      status: 3,
     };
 
     if (startDate && endDate) {
