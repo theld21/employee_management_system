@@ -286,10 +286,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">
                       <div>
-                        <span className="font-medium">Từ:</span> {formatDateTime(request.startTime)}
+                        <span className="font-medium"><span className="inline-block w-10">Từ:</span> {formatDateTime(request.startTime)}</span>
                       </div>
                       <div>
-                        <span className="font-medium">Đến:</span> {formatDateTime(request.endTime)}
+                        <span className="font-medium"><span className="inline-block w-10">Đến:</span> {formatDateTime(request.endTime)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">

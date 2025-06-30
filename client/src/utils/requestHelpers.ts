@@ -35,13 +35,27 @@ export interface Request {
 export const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleDateString();
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 };
 
 export const formatDateTime = (dateString: string) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  const dateStr = date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const timeStr = date.toLocaleString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  return `${dateStr} ${timeStr}`;
 };
 
 export const formatRequestType = (type: string) => {
