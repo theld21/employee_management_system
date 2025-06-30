@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const setupAdmin = require("./utils/setupAdmin");
+const { scheduleLeaveDaysCron } = require("./utils/cronJobs");
 const authRoutes = require("./routes/authRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const requestRoutes = require("./routes/requestRoutes");
@@ -31,6 +32,8 @@ connectDB()
   .then(() => {
     // Setup initial admin user
     setupAdmin();
+    // Initialize cron jobs
+    scheduleLeaveDaysCron();
   })
   .catch((err) => {
     console.error("Failed to connect to the database:", err);

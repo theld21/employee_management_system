@@ -5,6 +5,23 @@ const { auth, authorize } = require("../middlewares/auth");
 
 const router = express.Router();
 
+// Get current user's leave days
+router.get("/current-leave-days", auth, requestController.getCurrentLeaveDays);
+
+// Calculate leave days for a date range
+router.post(
+  "/calculate-leave-days",
+  auth,
+  [
+    check("startTime", "Start time is required").exists(),
+    check("endTime", "End time is required").exists(),
+  ],
+  requestController.calculateLeaveDaysForRange
+);
+
+// Calculate leave days for a date range
+router.post("/calculate-days", auth, requestController.calculateDays);
+
 // Create request
 router.post(
   "/",

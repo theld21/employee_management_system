@@ -1,28 +1,23 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import api from '@/utils/api';
-import RequestStatus from '@/constants/requestStatus';
+import { toast } from 'react-hot-toast';
+import {
+  WORK_START_HOUR,
+  WORK_START_MINUTE,
+  WORK_END_HOUR,
+  WORK_END_MINUTE,
+  LUNCH_START_HOUR,
+  LUNCH_START_MINUTE,
+  LUNCH_END_HOUR,
+  LUNCH_END_MINUTE,
+} from '@/constants/workDays';
 
 interface RequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRequestSubmitted?: () => void;
-}
-
-// Define interfaces for API error handling
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string;
-      errors?: Array<{
-        path: string;
-        msg: string;
-      }>;
-    };
-    status?: number;
-    headers?: Record<string, string>;
-  };
+  onRequestSubmitted: () => void;
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
@@ -31,256 +26,409 @@ const RequestModal: React.FC<RequestModalProps> = ({
   onRequestSubmitted,
 }) => {
   const [formData, setFormData] = useState({
-    requestType: 'work-time',
-    startDateTime: '',
-    endDateTime: '',
+    type: 'leave-request',
+    startTime: '',
+    endTime: '',
     reason: '',
+    leaveDays: 0
   });
-  const [loading, setLoading] = useState(false);
+
+  const [currentLeaveDays, setCurrentLeaveDays] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  // Add helper functions for date validation
-  const isSameDay = (date1: Date, date2: Date) => {
-    return date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate();
+  // Thêm state cho việc chọn ca sáng/chiều
+  const [startSession, setStartSession] = useState<'morning' | 'afternoon'>('morning');
+  const [endSession, setEndSession] = useState<'morning' | 'afternoon'>('afternoon');
+
+  // Hàm validate thời gian
+  const validateDates = (start: string, end: string, type: string, startSess?: 'morning' | 'afternoon', endSess?: 'morning' | 'afternoon') => {
+    if (!start || !end) return null;
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const now = new Date();
+
+    // Nếu là nghỉ phép, set giờ theo ca
+    if (type === 'leave-request' && startSess && endSess) {
+      if (startSess === 'morning') {
+        startDate.setHours(8, 30, 0);
+      } else {
+        startDate.setHours(13, 0, 0);
+      }
+      if (endSess === 'morning') {
+        endDate.setHours(12, 0, 0);
+      } else {
+        endDate.setHours(17, 0, 0);
+      }
+    }
+
+    // Validate end > start
+    if (endDate <= startDate) {
+      return 'Thời gian kết thúc phải lớn hơn thời gian bắt đầu';
+    }
+
+    // Với cập nhật giờ làm: validate thời gian < hiện tại
+    if (type === 'work-time') {
+      if (startDate >= now) {
+        return 'Thời gian bắt đầu phải nhỏ hơn thời gian hiện tại';
+      }
+      if (endDate >= now) {
+        return 'Thời gian kết thúc phải nhỏ hơn thời gian hiện tại';
+      }
+    }
+
+    return null;
   };
 
-  const isNotFutureDate = (date: Date) => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    return date <= today;
+  // Kiểm tra form có hợp lệ không
+  const isFormValid = () => {
+    if (!formData.startTime || !formData.endTime || !formData.reason) return false;
+    if (formData.type === 'leave-request' && formData.leaveDays > (currentLeaveDays ?? 0)) return false;
+    return true;
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // Reset success and error messages when form changes
-    setSuccess(false);
+  useEffect(() => {
+    const fetchCurrentLeaveDays = async () => {
+      try {
+        const response = await api.get('/requests/current-leave-days');
+        setCurrentLeaveDays(response.data.currentLeaveDays);
+      } catch (err) {
+        console.error('Error fetching current leave days:', err);
+      }
+    };
+
+    if (isOpen) {
+      fetchCurrentLeaveDays();
+    }
     setError(null);
-  };
+    // Reset form data
+    setFormData(prev => ({
+      ...prev,
+      startTime: '',
+      endTime: '',
+      reason: '',
+      leaveDays: 0
+    }));
+    // Reset session selections
+    setStartSession('morning');
+    setEndSession('afternoon');
+  }, [isOpen]);
+
+  useEffect(() => {
+    setError(null);
+    // Reset form data when changing request type
+    if (formData.type === 'leave-request') {
+      setFormData(prev => ({
+        ...prev,
+        startTime: '',
+        endTime: '',
+        reason: '',
+        leaveDays: 0
+      }));
+      setStartSession('morning');
+      setEndSession('afternoon');
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        startTime: '',
+        endTime: '',
+        reason: ''
+      }));
+    }
+  }, [formData.type]);
+
+  useEffect(() => {
+    if (formData.startTime && formData.endTime) {
+      const validationError = formData.type === 'leave-request'
+        ? validateDates(formData.startTime, formData.endTime, formData.type, startSession, endSession)
+        : validateDates(formData.startTime, formData.endTime, formData.type);
+
+      if (validationError) {
+        setError(validationError);
+        setFormData(prev => ({ ...prev, leaveDays: 0 }));
+        return;
+      }
+
+      if (formData.type === 'leave-request') {
+        // Xác định giờ theo ca
+        const start = new Date(formData.startTime);
+        const end = new Date(formData.endTime);
+
+        if (startSession === 'morning') {
+          start.setHours(8, 30, 0);
+        } else {
+          start.setHours(13, 0, 0);
+        }
+        if (endSession === 'morning') {
+          end.setHours(12, 0, 0);
+        } else {
+          end.setHours(17, 0, 0);
+        }
+
+        // Gọi API để tính số ngày nghỉ
+        const calculateDays = async () => {
+          try {
+            const response = await api.post('/requests/calculate-days', {
+              startTime: start.toISOString(),
+              endTime: end.toISOString()
+            });
+            setFormData(prev => ({ ...prev, leaveDays: response.data.leaveDays }));
+          } catch (err) {
+            console.error('Error calculating leave days:', err);
+          }
+        };
+        calculateDays();
+      }
+    }
+    setError(null);
+  }, [formData.startTime, formData.endTime, startSession, endSession, formData.type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.requestType) {
-      setError('Please select a request type');
-      return;
-    }
-    
-    if (!formData.startDateTime) {
-      setError('Please specify the start date and time');
-      return;
-    }
-    
-    if (!formData.endDateTime) {
-      setError('Please specify the end date and time');
-      return;
-    }
-    
-    if (!formData.reason) {
-      setError('Please provide a reason for the request');
-      return;
-    }
-
-    const startDate = new Date(formData.startDateTime);
-    const endDate = new Date(formData.endDateTime);
-
-    // Additional validation for work-time request type
-    if (formData.requestType === 'work-time') {
-      // Check if dates are not in the future
-      if (!isNotFutureDate(startDate) || !isNotFutureDate(endDate)) {
-        setError('Không thể chọn ngày trong tương lai cho yêu cầu cập nhật giờ làm');
-        return;
-      }
-
-      // Check if start and end dates are on the same day
-      if (!isSameDay(startDate, endDate)) {
-        setError('Thời gian bắt đầu và kết thúc phải trong cùng một ngày');
-        return;
-      }
-
-      // Check if start time is before end time
-      if (startDate >= endDate) {
-        setError('Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc');
-        return;
-      }
-    }
-    
-    setLoading(true);
     setError(null);
-    
+    setIsLoading(true);
     try {
-      console.log('Sending request with data:', {
-        type: formData.requestType,
-        startTime: new Date(formData.startDateTime).toISOString(),
-        endTime: new Date(formData.endDateTime).toISOString(),
-        reason: formData.reason,
-        status: RequestStatus.PENDING
-      });
-      
-      // Send the request to the server using the /api/requests/create endpoint to avoid routing conflicts
-      const response = await api.post('/requests/create', {
-        type: formData.requestType,
-        startTime: new Date(formData.startDateTime).toISOString(),
-        endTime: new Date(formData.endDateTime).toISOString(),
-        reason: formData.reason,
-        status: RequestStatus.PENDING
-      });
-      
-      console.log('Response:', response.data);
-      
-      // Reset form
-      setFormData({
-        requestType: 'work-time',
-        startDateTime: '',
-        endDateTime: '',
-        reason: '',
-      });
-      
-      setSuccess(true);
-      
-      // Notify parent component to refresh the request list
-      if (onRequestSubmitted) {
-        onRequestSubmitted();
-      }
-      
-      // Close modal after successful submission
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err: unknown) {
-      console.error('Full error object:', err);
-      
-      // More detailed error logging
-      if (err && typeof err === 'object' && 'response' in err) {
-        const response = (err as ApiError).response;
-        console.error('Error response data:', response?.data);
-        console.error('Error status:', response?.status);
-        console.error('Error headers:', response?.headers);
-        
-        // Extract error message or show validation errors if available
-        if (response?.data?.errors && Array.isArray(response.data.errors)) {
-          const errorMessages = response.data.errors.map((e) => 
-            `${e.path}: ${e.msg}`
-          ).join(', ');
-          setError(`Validation errors: ${errorMessages}`);
-        } else if (response?.data?.message) {
-          setError(response.data.message);
+      const start = new Date(formData.startTime);
+      const end = new Date(formData.endTime);
+
+      // Set time based on request type
+      if (formData.type === 'leave-request') {
+        if (startSession === 'morning') {
+          start.setHours(8, 30, 0);
         } else {
-          setError('Failed to create request. Please try again.');
+          start.setHours(13, 0, 0);
+        }
+        if (endSession === 'morning') {
+          end.setHours(12, 0, 0);
+        } else {
+          end.setHours(17, 0, 0);
+        }
+
+        // Validate với session
+        const validationError = validateDates(formData.startTime, formData.endTime, formData.type, startSession, endSession);
+        if (validationError) {
+          setError(validationError);
+          setIsLoading(false);
+          return;
         }
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        // Validate không cần session
+        const validationError = validateDates(formData.startTime, formData.endTime, formData.type);
+        if (validationError) {
+          setError(validationError);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      await api.post('/requests', {
+        ...formData,
+        startTime: start.toISOString(),
+        endTime: end.toISOString()
+      });
+      toast.success('Tạo yêu cầu thành công');
+      onRequestSubmitted();
+      onClose();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Có lỗi xảy ra khi tạo yêu cầu');
       }
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-[600px] p-5 lg:p-10"
-    >
-      <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">Tạo yêu cầu</h3>
-      
-      <form onSubmit={handleSubmit}>
-        {success && (
-          <div className="mb-4 rounded-lg bg-green-100 px-4 py-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
-            Yêu cầu đã được gửi thành công!
-          </div>
-        )}
-        
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-            {error}
-          </div>
-        )}
-        
-        <div className="mb-4">
-          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Loại yêu cầu
-          </label>
-          <select
-            name="requestType"
-            value={formData.requestType}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
-            required
-          >
-            <option value="work-time">Cập nhật giờ làm</option>
-            <option value="leave-request">Yêu cầu nghỉ</option>
-            <option value="wfh-request">Yêu cầu làm tại nhà</option>
-            <option value="overtime">Yêu cầu làm thêm giờ</option>
-          </select>
-        </div>
-        
-        <div className="mb-4">
-          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Ngày và giờ bắt đầu
-          </label>
-          <input
-            type="datetime-local"
-            name="startDateTime"
-            value={formData.startDateTime}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
-            required
-          />
-        </div>
-        
-        <div className="mb-4">
-          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Ngày và giờ kết thúc
-          </label>
-          <input
-            type="datetime-local"
-            name="endDateTime"
-            value={formData.endDateTime}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
-            required
-          />
-        </div>
-        
-        <div className="mb-4">
-          <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Lý do
-          </label>
-          <textarea
-            name="reason"
-            value={formData.reason}
-            onChange={handleChange}
-            rows={3}
-            className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
-            placeholder="Vui lòng cung cấp lý do cho yêu cầu của bạn..."
-            required
-          ></textarea>
-        </div>
-        
-        <div className="flex items-center justify-end w-full gap-3 mt-6">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[600px] dark:bg-gray-900">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Tạo yêu cầu mới
+          </h3>
           <button
-            type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
           >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2.5 rounded-lg bg-blue-500 text-sm font-medium text-white hover:bg-blue-600 focus:ring-4 focus:ring-blue-300/30 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
+            <span className="sr-only">Đóng</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Loại yêu cầu
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            >
+              <option value="work-time">Cập nhật giờ làm</option>
+              <option value="leave-request">Nghỉ phép có lương</option>
+            </select>
+          </div>
+
+          {/* Ẩn form nếu hết ngày phép */}
+          {formData.type === 'leave-request' && currentLeaveDays !== null && currentLeaveDays === 0 && (
+            <div className="text-sm text-red-600 dark:text-red-400">
+              Số ngày phép còn lại: <span className="font-medium">0 ngày</span>.<br />Bạn không thể tạo yêu cầu nghỉ phép mới.
+            </div>
+          )}
+
+          {/* Hiển thị form nếu còn ngày phép */}
+          {formData.type === 'leave-request' && currentLeaveDays !== null && currentLeaveDays > 0 && (
+            <>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Số ngày phép còn lại: <span className="font-medium text-blue-600 dark:text-blue-400">{currentLeaveDays}</span> ngày
+              </div>
+              <div className="space-y-4">
+                {/* Ngày bắt đầu */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Ngày bắt đầu
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startTime.split('T')[0]}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                      required
+                    />
+                  </div>
+                  <div className="w-40 mt-1 md:mt-6">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 md:sr-only">
+                      Giờ bắt đầu
+                    </label>
+                    <select
+                      value={startSession}
+                      onChange={e => setStartSession(e.target.value as 'morning' | 'afternoon')}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    >
+                      <option value="morning">{`${WORK_START_HOUR.toString().padStart(2, '0')}:${WORK_START_MINUTE.toString().padStart(2, '0')}`}</option>
+                      <option value="afternoon">{`${LUNCH_END_HOUR.toString().padStart(2, '0')}:${LUNCH_END_MINUTE.toString().padStart(2, '0')}`}</option>
+                    </select>
+                  </div>
+                </div>
+                {/* Ngày kết thúc */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Ngày kết thúc
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.endTime.split('T')[0]}
+                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                      required
+                    />
+                  </div>
+                  <div className="w-40 mt-1 md:mt-6">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 md:sr-only">
+                      Giờ kết thúc
+                    </label>
+                    <select
+                      value={endSession}
+                      onChange={e => setEndSession(e.target.value as 'morning' | 'afternoon')}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    >
+                      <option value="morning">{`${LUNCH_START_HOUR.toString().padStart(2, '0')}:${LUNCH_START_MINUTE.toString().padStart(2, '0')}`}</option>
+                      <option value="afternoon">{`${WORK_END_HOUR.toString().padStart(2, '0')}:${WORK_END_MINUTE.toString().padStart(2, '0')}`}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              {formData.leaveDays > 0 && (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Số ngày nghỉ: <span className="font-medium text-blue-600 dark:text-blue-400">{formData.leaveDays}</span> ngày
+                  {formData.leaveDays > (currentLeaveDays ?? 0) && (
+                    <p className="mt-1 text-red-600 dark:text-red-400">
+                      Số ngày nghỉ vượt quá số ngày phép còn lại
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Cập nhật giờ làm */}
+          {formData.type === 'work-time' && (
+            <>
+              <div className="mb-4">
+                <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Ngày và giờ bắt đầu
+                </label>
+                <input
+                  type="datetime-local"
+                  name="startDateTime"
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Ngày và giờ kết thúc
+                </label>
+                <input
+                  type="datetime-local"
+                  name="endDateTime"
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 bg-transparent p-2 text-gray-800 outline-none focus:border-primary focus-visible:shadow-none dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          {!(formData.type === 'leave-request' && currentLeaveDays == 0) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Lý do
+              </label>
+              <textarea
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                rows={3}
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                required
+              />
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !isFormValid()}
+              className="px-4 py-2 rounded-lg bg-blue-500 text-sm font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-600 dark:hover:bg-blue-700"
+            >
+              {isLoading ? 'Đang tạo...' : 'Tạo yêu cầu'}
+            </button>
+          </div>
+        </form>
+      </div>
     </Modal>
   );
 };

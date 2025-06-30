@@ -2,6 +2,7 @@ import { Outfit } from 'next/font/google';
 import './globals.css';
 import { Metadata } from "next";
 import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from 'react-hot-toast';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -37,6 +38,7 @@ export default function RootLayout({
             <SidebarProvider>{children}</SidebarProvider>
           </ThemeProvider>
         </AuthProvider>
+        <Toaster position="top-right" />
       </body>
     </html>
   );

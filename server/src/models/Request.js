@@ -25,6 +25,27 @@ const RequestSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    leaveDays: {
+      type: Number,
+      validate: {
+        validator: function (v) {
+          if (this.type === "leave-request") {
+            return v >= 0.5 && v <= 30 && v % 0.5 === 0;
+          }
+          return true; // Skip validation for other request types
+        },
+        message: (props) => {
+          if (props.value < 0.5)
+            return "Số ngày nghỉ phải lớn hơn hoặc bằng 0.5";
+          if (props.value > 30) return "Số ngày nghỉ không được vượt quá 30";
+          return "Số ngày nghỉ phải là số nguyên hoặc số thập phân .5";
+        },
+      },
+      default: 0,
+      required: function () {
+        return this.type === "leave-request";
+      },
+    },
     status: {
       type: Number,
       enum: [1, 2, 3, 4, 5], // 1: pending, 2: confirmed, 3: approved, 4: rejected, 5: cancelled

@@ -6,53 +6,16 @@ import { useModal } from '@/hooks/useModal';
 import RequestModal from './RequestModal';
 import { Modal } from '@/components/ui/modal';
 import RequestStatus from '@/constants/requestStatus';
-
-interface Request {
-  _id: string;
-  type: string;
-  startTime: string;
-  endTime: string;
-  reason: string;
-  status: number;
-  createdAt: string;
-  confirmedBy?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    comment: string;
-  };
-  approvedBy?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    comment: string;
-  };
-  rejectedBy?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    comment: string;
-  };
-  cancelledBy?: {
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    date: string;
-    reason: string;
-  };
-  user?: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  };
-}
+import { toast } from 'react-hot-toast';
+import {
+  type Request,
+  formatDate,
+  formatDateTime,
+  formatRequestType,
+  formatStatus,
+  getStatusBadgeClass,
+  getProcessInfo
+} from '@/utils/requestHelpers';
 
 const RequestList: React.FC = () => {
   const { token } = useAuth();
@@ -60,33 +23,31 @@ const RequestList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   // For request details modal
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  // Simplify cancellation state
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const fetchRequests = async (page = currentPage, limit = pageSize) => {
     if (!token) return;
-    
+
     setLoading(true);
     try {
       console.log(`Fetching requests with params: page=${page}, limit=${limit}`);
       const response = await api.get(`/requests/my?page=${page}&limit=${limit}`);
-      
+
       console.log('API Response status:', response.status);
       const data = response.data;
       console.log('API Response data:', data);
-      
+
       // Handle both new paginated format and old direct array format
       if (data && typeof data === 'object' && 'requests' in data && 'pagination' in data) {
         console.log('Using paginated format:', data.pagination);
@@ -108,7 +69,7 @@ const RequestList: React.FC = () => {
       }
     } catch (err: unknown) {
       console.error('Full error object:', err);
-      
+
       if (err && typeof err === 'object' && 'response' in err) {
         const errorResponse = (err as {
           response: {
@@ -119,7 +80,7 @@ const RequestList: React.FC = () => {
         console.error('Error status:', errorResponse?.status);
         console.error('Error data:', errorResponse?.data);
       }
-      
+
       setError('Error fetching requests');
     } finally {
       setLoading(false);
@@ -152,114 +113,33 @@ const RequestList: React.FC = () => {
   const handleRequestSubmitted = () => {
     fetchRequests();
   };
-  
+
   const handleShowRequestDetails = (request: Request) => {
     setSelectedRequest(request);
     setShowDetailModal(true);
   };
-  
+
   const closeDetailModal = () => {
     setShowDetailModal(false);
     setSelectedRequest(null);
-    setShowCancelConfirm(false);
     setCancelError(null);
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  };
-
-  const getStatusBadgeClass = (status: number) => {
-    switch (status) {
-      case RequestStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case RequestStatus.CONFIRMED:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case RequestStatus.APPROVED:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case RequestStatus.REJECTED:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case RequestStatus.CANCELLED:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  const formatRequestType = (type: string) => {
-    switch (type) {
-      case 'work-time':
-        return 'Cập nhật giờ làm';
-      case 'leave-request':
-        return 'Nghỉ phép';
-      case 'wfh-request':
-        return 'Làm việc từ xa';
-      case 'overtime':
-        return 'Làm thêm giờ';
-      default:
-        return type;
-    }
-  };
-
-  const formatStatus = (status: number) => {
-    switch (status) {
-      case RequestStatus.PENDING:
-        return 'Chờ xác nhận';
-      case RequestStatus.CONFIRMED:
-        return 'Đã xác nhận';
-      case RequestStatus.APPROVED:
-        return 'Đã duyệt';
-      case RequestStatus.REJECTED:
-        return 'Từ chối';
-      case RequestStatus.CANCELLED:
-        return 'Đã hủy';
-      default:
-        return 'Không xác định';
-    }
-  };
-
-  // Simplified cancel request handler
-  const handleCancelRequest = async () => {
-    if (!selectedRequest) return;
-    
-    // Đảm bảo chỉ request ở trạng thái pending mới có thể bị hủy
-    if (selectedRequest.status !== RequestStatus.PENDING) {
-      setCancelError('Chỉ yêu cầu đang chờ mới có thể bị hủy');
-      return;
-    }
-    
-    setCancelLoading(true);
-    setCancelError(null);
-    
+  const handleCancelRequest = async (requestId: string) => {
     try {
-      // Use the original cancel endpoint with a default reason
-      await api.put(`/requests/cancel/${selectedRequest._id}`, {
-        reason: "Yêu cầu đã bị hủy bởi người dùng"
-      });
-      
-      // Đóng modal chi tiết request
-      closeDetailModal();
-      
-      // Tải lại danh sách requests
+      setCancelLoading(true);
+      setCancelError(null);
+      await api.post(`/requests/${requestId}/cancel`);
+      toast.success('Hủy yêu cầu thành công');
+      setShowDetailModal(false);
       fetchRequests();
-      
     } catch (err: unknown) {
-      console.error('Error cancelling request:', err);
-      // Use type assertion to safely access response data
-      if (err && typeof err === 'object' && 'response' in err) {
-        const response = (err as { response: { data?: { message?: string } } }).response;
-        setCancelError(response?.data?.message || 'Failed to cancel request');
+      if (err instanceof Error) {
+        setCancelError(err.message);
       } else {
-        setCancelError('Failed to cancel request');
+        setCancelError('Có lỗi xảy ra khi hủy yêu cầu');
       }
+    } finally {
       setCancelLoading(false);
     }
   };
@@ -275,7 +155,7 @@ const RequestList: React.FC = () => {
           Tạo yêu cầu
         </button>
       </div>
-      
+
       {loading && requests.length === 0 ? (
         <div className="flex h-40 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -302,8 +182,8 @@ const RequestList: React.FC = () => {
               </thead>
               <tbody>
                 {requests.map((request) => (
-                  <tr 
-                    key={request._id} 
+                  <tr
+                    key={request._id}
                     className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50 cursor-pointer"
                     onClick={() => handleShowRequestDetails(request)}
                   >
@@ -322,7 +202,7 @@ const RequestList: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span 
+                      <span
                         className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(request.status)}`}
                       >
                         {formatStatus(request.status)}
@@ -377,11 +257,11 @@ const RequestList: React.FC = () => {
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </button>
-              
+
               <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
                 Trang {currentPage} của {totalPages}
               </span>
-              
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -409,175 +289,173 @@ const RequestList: React.FC = () => {
       )}
 
       {/* Request Creation Modal */}
-      <RequestModal 
+      <RequestModal
         isOpen={isOpen}
         onClose={closeModal}
         onRequestSubmitted={handleRequestSubmitted}
       />
-      
-      {/* Request Detail Modal */}
+
+      {/* Request Details Modal */}
       <Modal
         isOpen={showDetailModal}
         onClose={closeDetailModal}
-        className="max-w-[600px] p-5 lg:p-8"
+        className="max-w-[600px] dark:bg-gray-900"
       >
         {selectedRequest && (
-          <div>
-            <div className="items-center mb-4">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Chi tiết yêu cầu
               </h3>
-              <span 
-                className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium mt-2 ${getStatusBadgeClass(selectedRequest.status)}`}
+              <button
+                onClick={closeDetailModal}
+                className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
               >
-                {formatStatus(selectedRequest.status)}
-              </span>
+                <span className="sr-only">Đóng</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Loại yêu cầu</h4>
-                <p className="text-gray-800 dark:text-gray-300">{formatRequestType(selectedRequest.type)}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Ngày gửi</h4>
-                <p className="text-gray-800 dark:text-gray-300">{formatDate(selectedRequest.createdAt)}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian bắt đầu</h4>
-                <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.startTime)}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian kết thúc</h4>
-                <p className="text-gray-800 dark:text-gray-300">{formatDateTime(selectedRequest.endTime)}</p>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lý do</h4>
-              <p className="text-gray-800 dark:text-gray-300 mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedRequest.reason}</p>
-            </div>
-            
-            {selectedRequest.status === RequestStatus.CONFIRMED && selectedRequest.confirmedBy && (
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">Thông tin xác nhận</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Xác nhận bởi:</span> {selectedRequest.confirmedBy.user.firstName} {selectedRequest.confirmedBy.user.lastName}
-                </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Xác nhận vào:</span> {formatDateTime(selectedRequest.confirmedBy.date)}
-                </p>
-                {selectedRequest.confirmedBy.comment && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Ghi chú:</span> {selectedRequest.confirmedBy.comment}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {selectedRequest.status === RequestStatus.APPROVED && selectedRequest.approvedBy && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Thông tin phê duyệt</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Phê duyệt bởi:</span> {selectedRequest.approvedBy.user.firstName} {selectedRequest.approvedBy.user.lastName}
-                </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Phê duyệt vào:</span> {formatDateTime(selectedRequest.approvedBy.date)}
-                </p>
-                {selectedRequest.approvedBy.comment && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Ghi chú:</span> {selectedRequest.approvedBy.comment}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {selectedRequest.status === RequestStatus.REJECTED && selectedRequest.rejectedBy && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Thông tin từ chối</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Từ chối bởi:</span> {selectedRequest.rejectedBy.user.firstName} {selectedRequest.rejectedBy.user.lastName}
-                </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Từ chối vào:</span> {formatDateTime(selectedRequest.rejectedBy.date)}
-                </p>
-                {selectedRequest.rejectedBy.comment && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Lý do:</span> {selectedRequest.rejectedBy.comment}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {selectedRequest.status === RequestStatus.CANCELLED && selectedRequest.cancelledBy && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Thông tin hủy</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <span className="font-medium">Hủy bởi:</span> {
-                    selectedRequest.cancelledBy.user && selectedRequest.cancelledBy.user.firstName 
-                    ? `${selectedRequest.cancelledBy.user.firstName} ${selectedRequest.cancelledBy.user.lastName}`
-                    : 'You'
-                  }
-                </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Hủy vào:</span> {formatDateTime(selectedRequest.cancelledBy.date)}
-                </p>
-                {selectedRequest.cancelledBy.reason && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Lý do:</span> {selectedRequest.cancelledBy.reason}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Show cancel button only for pending requests */}
-            {selectedRequest && selectedRequest.status === RequestStatus.PENDING && !showCancelConfirm && (
-              <div className="mt-6 flex items-center justify-end">
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30"
-                >
-                  Hủy yêu cầu
-                </button>
-              </div>
-            )}
-            
-            {/* Confirmation dialog for cancellation */}
-            {selectedRequest && selectedRequest.status === RequestStatus.PENDING && showCancelConfirm && (
-              <div className="mt-6">
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                    Bạn có chắc chắn muốn hủy yêu cầu này? Hành động này không thể được hoàn tác.
-                  </p>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Loại yêu cầu</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {formatRequestType(selectedRequest.type)}
+                  </div>
                 </div>
-                
+
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Trạng thái</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    <span className={getStatusBadgeClass(selectedRequest.status)}>
+                      {formatStatus(selectedRequest.status)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Thời gian bắt đầu</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {formatDateTime(selectedRequest.startTime)}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Thời gian kết thúc</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {formatDateTime(selectedRequest.endTime)}
+                  </div>
+                </div>
+              </div>
+
+              {selectedRequest.type === 'leave-request' && (
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Số ngày nghỉ</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {(selectedRequest.leaveDays || 0).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ngày
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Lý do</div>
+                <div className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                  {selectedRequest.reason}
+                </div>
+              </div>
+
+              {/* Process Info */}
+              {getProcessInfo(selectedRequest) && (
+                <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">Thông tin xử lý</div>
+                  <div className="space-y-2">
+                    {selectedRequest?.confirmedBy && (
+                      <div className="text-gray-900 dark:text-white flex items-center gap-2">
+                        <span className="text-gray-500 dark:text-gray-400">({new Date(selectedRequest.confirmedBy.date).toLocaleString('vi-VN')})</span>
+                        <span className="font-medium"> {selectedRequest.confirmedBy.user.firstName} {selectedRequest.confirmedBy.user.lastName}</span>
+                        <span className={getStatusBadgeClass(RequestStatus.CONFIRMED)}>
+                          {formatStatus(RequestStatus.CONFIRMED)}
+                        </span>
+                        {selectedRequest.confirmedBy.comment && (
+                          <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap">
+                            Ghi chú: {selectedRequest.confirmedBy.comment}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selectedRequest?.approvedBy && (
+                      <div className="text-gray-900 dark:text-white flex items-center gap-2">
+                        <span className="text-gray-500 dark:text-gray-400">({new Date(selectedRequest.approvedBy.date).toLocaleString('vi-VN')})</span>
+                        <span className="font-medium">{selectedRequest.approvedBy.user.firstName} {selectedRequest.approvedBy.user.lastName}</span>
+                        <span className={getStatusBadgeClass(RequestStatus.APPROVED)}>
+                          {formatStatus(RequestStatus.APPROVED)}
+                        </span>
+                        {selectedRequest.approvedBy.comment && (
+                          <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap">
+                            Ghi chú: {selectedRequest.approvedBy.comment}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selectedRequest?.rejectedBy && (
+                      <div className="text-gray-900 dark:text-white flex items-center gap-2">
+                        <span className="text-gray-500 dark:text-gray-400">({new Date(selectedRequest.rejectedBy.date).toLocaleString('vi-VN')})</span>
+                        <span className="font-medium">{selectedRequest.rejectedBy.user.firstName} {selectedRequest.rejectedBy.user.lastName}</span>
+                        <span className={getStatusBadgeClass(RequestStatus.REJECTED)}>
+                          {formatStatus(RequestStatus.REJECTED)}
+                        </span>
+                        {selectedRequest.rejectedBy.comment && (
+                          <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap">
+                            Ghi chú: {selectedRequest.rejectedBy.comment}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selectedRequest?.cancelledBy && (
+                      <div className="text-gray-900 dark:text-white flex items-center gap-2">
+                        <span className="text-gray-500 dark:text-gray-400">({new Date(selectedRequest.cancelledBy.date).toLocaleString('vi-VN')})</span>
+                        <span className="font-medium">{selectedRequest.cancelledBy.user.firstName} {selectedRequest.cancelledBy.user.lastName}</span>
+                        <span className={getStatusBadgeClass(RequestStatus.CANCELLED)}>
+                          {formatStatus(RequestStatus.CANCELLED)}
+                        </span>
+                        {selectedRequest.cancelledBy.reason && (
+                          <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap">
+                            Lý do: {selectedRequest.cancelledBy.reason}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={closeDetailModal}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Đóng
+                </button>
+                {selectedRequest.status === RequestStatus.PENDING && (
+                  <button
+                    onClick={() => handleCancelRequest(selectedRequest._id)}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={cancelLoading}
+                  >
+                    {cancelLoading ? 'Đang hủy...' : 'Hủy yêu cầu'}
+                  </button>
+                )}
+
                 {cancelError && (
-                  <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  <div className="mt-2 text-sm text-red-600 dark:text-red-400">
                     {cancelError}
                   </div>
                 )}
-                
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    onClick={() => setShowCancelConfirm(false)}
-                    className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-                    disabled={cancelLoading}
-                  >
-                    Không, giữ yêu cầu
-                  </button>
-                  <button
-                    onClick={handleCancelRequest}
-                    className="px-4 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300/30 disabled:opacity-70 disabled:cursor-not-allowed"
-                    disabled={cancelLoading}
-                  >
-                    {cancelLoading ? 'Đang hủy...' : 'Có, hủy yêu cầu'}
-                  </button>
-                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </Modal>

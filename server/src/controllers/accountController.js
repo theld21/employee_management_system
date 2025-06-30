@@ -156,6 +156,7 @@ exports.updateAccount = async (req, res) => {
       status,
       group,
       startDate,
+      leaveDays,
     } = req.body;
 
     // Check if user exists
@@ -189,6 +190,22 @@ exports.updateAccount = async (req, res) => {
       user.group = group;
     if (startDate) user.startDate = startDate;
 
+    // Chỉ update leaveDays khi được truyền vào và là số hợp lệ
+    if (leaveDays !== undefined && leaveDays !== null) {
+      // Convert to number with 1 decimal place
+      const formattedLeaveDays = Number(Number(leaveDays).toFixed(1));
+
+      // Validate số ngày phép
+      if (isNaN(formattedLeaveDays) || formattedLeaveDays < 0) {
+        return res.status(400).json({
+          message: "Số ngày phép không hợp lệ",
+          error: "Leave days must be a non-negative number",
+        });
+      }
+
+      user.leaveDays = formattedLeaveDays;
+    }
+
     await user.save();
 
     // Return updated user without password and with group populated
@@ -221,5 +238,55 @@ exports.deleteAccount = async (req, res) => {
     res
       .status(500)
       .json({ message: "Lỗi xóa tài khoản", error: error.message });
+  }
+};
+
+// Update leave days manually
+exports.updateLeaveDays = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { leaveDays } = req.body;
+
+    if (typeof leaveDays !== "number") {
+      return res.status(400).json({ message: "Số ngày phép phải là một số" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
+    }
+
+    user.leaveDays = leaveDays;
+    await user.save();
+
+    res.json({ message: "Cập nhật số ngày phép thành công", user });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi cập nhật số ngày phép",
+      error: error.message,
+    });
+  }
+};
+
+// Get user's leave days
+exports.getLeaveDays = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id, "leaveDays firstName lastName");
+    if (!user) {
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
+    }
+
+    res.json({
+      leaveDays: user.leaveDays,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi lấy thông tin ngày phép",
+      error: error.message,
+    });
   }
 };

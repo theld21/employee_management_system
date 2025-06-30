@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Group = require("../models/Group");
 const Attendance = require("../models/Attendance");
 const RequestStatus = require("../constants/requestStatus");
+const { calculateLeaveDays } = require("../utils/leaveCalculator");
 
 // Create a new request
 exports.createRequest = async (req, res) => {
@@ -13,23 +14,63 @@ exports.createRequest = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { type, startTime, endTime, reason, status } = req.body;
+    const { type, startTime, endTime, reason } = req.body;
     const userId = req.user.id;
 
-    // Create request - default status is PENDING (1)
+    // Validate endTime phải lớn hơn startTime
+    if (!startTime || !endTime || new Date(endTime) <= new Date(startTime)) {
+      return res
+        .status(400)
+        .json({ message: "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" });
+    }
+
+    // Nếu là request nghỉ phép, kiểm tra số ngày phép còn lại
+    if (type === "leave-request") {
+      // Tính số ngày nghỉ
+      const leaveDaysNeeded = calculateLeaveDays(startTime, endTime);
+
+      // Kiểm tra user có đủ ngày phép không
+      const user = await User.findById(userId);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: "Không tìm thấy thông tin người dùng" });
+      }
+
+      if (user.leaveDays < leaveDaysNeeded) {
+        return res.status(400).json({
+          message: "Số ngày phép không đủ",
+          currentLeaveDays: user.leaveDays,
+          requestedDays: leaveDaysNeeded,
+        });
+      }
+
+      // Create request với số ngày nghỉ đã tính
+      const request = new Request({
+        user: userId,
+        type,
+        startTime,
+        endTime,
+        reason,
+        leaveDays: leaveDaysNeeded,
+        status: RequestStatus.PENDING,
+      });
+
+      await request.save();
+      return res.status(201).json(request);
+    }
+
+    // Xử lý các loại request khác
     const request = new Request({
       user: userId,
       type,
       startTime,
       endTime,
       reason,
-      status: status
-        ? RequestStatus.getStatusCode(status)
-        : RequestStatus.PENDING,
+      status: RequestStatus.PENDING,
     });
 
     await request.save();
-
     res.status(201).json(request);
   } catch (error) {
     console.error("Lỗi tạo yêu cầu:", error);
@@ -65,16 +106,16 @@ exports.getUserRequests = async (req, res) => {
     // Get paginated requests
     const requests = await Request.find(query)
       .populate({
+        path: "confirmedBy.user",
+        select: "firstName lastName username",
+      })
+      .populate({
         path: "approvedBy.user",
-        select: "firstName lastName",
+        select: "firstName lastName username",
       })
       .populate({
         path: "rejectedBy.user",
-        select: "firstName lastName",
-      })
-      .populate({
-        path: "cancelledBy.user",
-        select: "firstName lastName",
+        select: "firstName lastName username",
       })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -167,7 +208,7 @@ exports.getRequestsForManager = async (req, res) => {
     }
     // For approve managers: only show CONFIRMED requests that they can approve/reject
     else if (managerGroup.handleRequestType === "approve") {
-      query.status = RequestStatus.CONFIRMED;
+      query.status != RequestStatus.PENDING;
     }
     // For other cases (no handleRequestType): don't show any requests
     else {
@@ -307,6 +348,30 @@ exports.processRequest = async (req, res) => {
             .status(403)
             .json({ message: "Nhóm của bạn không có quyền phê duyệt yêu cầu" });
         }
+
+        // Nếu là request nghỉ phép, kiểm tra và trừ số ngày phép
+        if (request.type === "leave-request") {
+          const user = await User.findById(request.user._id);
+          if (!user) {
+            return res
+              .status(404)
+              .json({ message: "Không tìm thấy thông tin người dùng" });
+          }
+
+          // Kiểm tra lại số ngày phép còn lại
+          if (user.leaveDays < request.leaveDays) {
+            return res.status(400).json({
+              message: "Người dùng không còn đủ ngày phép",
+              currentLeaveDays: user.leaveDays,
+              requestedDays: request.leaveDays,
+            });
+          }
+
+          // Trừ số ngày phép
+          user.leaveDays -= request.leaveDays;
+          await user.save();
+        }
+
         request.status = RequestStatus.APPROVED;
         request.approvedBy = {
           user: userId,
@@ -343,8 +408,6 @@ exports.processRequest = async (req, res) => {
         break;
 
       case "reject":
-        // Confirm managers can only reject PENDING requests
-        // Approve managers can only reject CONFIRMED requests
         if (
           managerGroup.handleRequestType === "confirm" &&
           request.status !== RequestStatus.PENDING
@@ -452,5 +515,78 @@ exports.cancelRequest = async (req, res) => {
   } catch (error) {
     console.error("Lỗi hủy yêu cầu:", error);
     res.status(500).json({ message: "Lỗi hủy yêu cầu" });
+  }
+};
+
+// Calculate leave days for a date range
+exports.calculateLeaveDaysForRange = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { startTime, endTime } = req.body;
+    const userId = req.user.id;
+
+    // Tính số ngày nghỉ
+    const leaveDaysNeeded = calculateLeaveDays(startTime, endTime);
+
+    // Lấy thông tin user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thông tin người dùng" });
+    }
+
+    res.json({
+      leaveDaysNeeded,
+      currentLeaveDays: user.leaveDays,
+      isEnough: user.leaveDays >= leaveDaysNeeded,
+    });
+  } catch (error) {
+    console.error("Lỗi tính toán ngày phép:", error);
+    res.status(500).json({ message: "Lỗi tính toán ngày phép" });
+  }
+};
+
+// Get current user's leave days
+exports.getCurrentLeaveDays = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thông tin người dùng" });
+    }
+
+    res.json({
+      currentLeaveDays: user.leaveDays,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy số ngày phép:", error);
+    res.status(500).json({ message: "Lỗi lấy số ngày phép" });
+  }
+};
+
+exports.calculateDays = async (req, res) => {
+  try {
+    const { startTime, endTime } = req.body;
+
+    if (!startTime || !endTime) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp thời gian bắt đầu và kết thúc" });
+    }
+
+    const leaveDays = calculateLeaveDays(startTime, endTime);
+
+    res.json({ leaveDays });
+  } catch (err) {
+    console.error("Error calculating leave days:", err);
+    res.status(500).json({ message: "Có lỗi xảy ra khi tính số ngày nghỉ" });
   }
 };

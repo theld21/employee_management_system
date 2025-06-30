@@ -10,6 +10,12 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
     networks:
       - app-network
 
@@ -56,3 +62,4 @@ networks:
 
 volumes:
   mongodb_data:
+    driver: local

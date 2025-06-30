@@ -111,10 +111,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const callbackUrl = urlParams.get('callbackUrl');
       router.push(callbackUrl || '/');
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        setError(axiosError.response?.data?.message || 'Có lỗi xảy ra khi đăng nhập');
+      } else if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('An error occurred during login');
+        setError('Có lỗi xảy ra khi đăng nhập');
       }
     } finally {
       setLoading(false);

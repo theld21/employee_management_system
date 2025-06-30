@@ -76,6 +76,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    leaveDays: {
+      type: Number,
+      default: 0,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
