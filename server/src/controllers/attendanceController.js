@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const Attendance = require("../models/Attendance");
+const Request = require("../models/Request");
 
 /**
  * Hàm hỗ trợ để lấy ngày bắt đầu và kết thúc của một ngày
@@ -105,20 +106,53 @@ exports.getUserAttendance = async (req, res) => {
     const { startDate, endDate } = req.query;
     const userId = req.user.id;
 
-    let query = { user: userId };
+    let attendanceQuery = { user: userId };
+    let requestQuery = {
+      user: userId,
+      type: "leave-request",
+      status: { $in: [2, 3] }, // Only confirmed and approved requests
+    };
 
     if (startDate && endDate) {
       const { startOfDay: start } = getDayBoundaries(new Date(startDate));
       const { endOfDay: end } = getDayBoundaries(new Date(endDate));
 
-      query.date = {
+      attendanceQuery.date = {
         $gte: start,
         $lte: end,
       };
+
+      // For requests, check if startTime or endTime falls within the date range
+      requestQuery.$or = [
+        {
+          startTime: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+        {
+          endTime: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+        {
+          $and: [{ startTime: { $lte: start } }, { endTime: { $gte: end } }],
+        },
+      ];
     }
 
-    const attendance = await Attendance.find(query).sort({ date: -1 });
-    res.json(attendance);
+    const [attendance, requests] = await Promise.all([
+      Attendance.find(attendanceQuery).sort({ date: -1 }),
+      Request.find(requestQuery)
+        .populate("user", "name email")
+        .sort({ startTime: -1 }),
+    ]);
+
+    res.json({
+      attendance,
+      requests,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
