@@ -1,7 +1,13 @@
+import AppWrapper from "@/components/common/AppWrapper";
+
 export default function FullWidthPageLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div>{children}</div>;
+  return (
+    <AppWrapper>
+      <div>{children}</div>
+    </AppWrapper>
+  );
 }

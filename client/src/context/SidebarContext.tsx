@@ -7,6 +7,7 @@ type SidebarContextType = {
   isHovered: boolean;
   activeItem: string | null;
   openSubmenu: string | null;
+  isInitialized: boolean;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
   setIsHovered: (isHovered: boolean) => void;
@@ -33,6 +34,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -44,6 +46,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     handleResize();
+    setIsInitialized(true);
     window.addEventListener("resize", handleResize);
 
     return () => {
@@ -66,11 +69,12 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <SidebarContext.Provider
       value={{
-        isExpanded: isMobile ? false : isExpanded,
+        isExpanded: !isInitialized ? true : (isMobile ? false : isExpanded),
         isMobileOpen,
         isHovered,
         activeItem,
         openSubmenu,
+        isInitialized,
         toggleSidebar,
         toggleMobileSidebar,
         setIsHovered,

@@ -41,6 +41,7 @@ type AuthContextType = {
   user: User | null;
   token: string | null;
   loading: boolean;
+  isInitialized: boolean;
   error: string | null;
   login: (username: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
@@ -63,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
   // Check if user is already logged in on mount
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       fetchCurrentUser();
     } else {
       setLoading(false);
+      setIsInitialized(true);
     }
   }, []);
 
@@ -87,6 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(null);
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
   };
 
@@ -100,12 +104,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(data.user);
       setToken(data.token);
       // Set token in cookie with httpOnly flag
-      Cookies.set('token', data.token, { 
+      Cookies.set('token', data.token, {
         expires: 7, // 7 days
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
-      
+
       // Check for callback URL in query params
       const urlParams = new URLSearchParams(window.location.search);
       const callbackUrl = urlParams.get('callbackUrl');
@@ -134,7 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(data.user);
       setToken(data.token);
       // Set token in cookie with httpOnly flag
-      Cookies.set('token', data.token, { 
+      Cookies.set('token', data.token, {
         expires: 7, // 7 days
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
@@ -161,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async (): Promise<boolean> => {
     const storedToken = Cookies.get('token');
     if (!storedToken) return false;
-    
+
     try {
       const response = await api.get('/auth/me');
       setUser(response.data);
@@ -180,6 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     token,
     loading,
+    isInitialized,
     error,
     login,
     register,
