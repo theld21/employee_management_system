@@ -6,7 +6,6 @@ import Button from "../ui/button/Button";
 import Label from "../form/Label";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
-import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
@@ -37,6 +36,10 @@ export default function UserInfoCard() {
   const router = useRouter();
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   const profileForm = useForm<UserProfile>({
     defaultValues: {
@@ -63,15 +66,20 @@ export default function UserInfoCard() {
 
   const onSubmitProfile = async (data: UserProfile) => {
     setIsLoadingProfile(true);
+    setProfileError(null);
+    setProfileSuccess(null);
     try {
       await api.put("/auth/profile", data);
-      toast.success("Cập nhật thông tin thành công");
-      profileModal.closeModal();
       await checkAuth();
       router.refresh();
+      setProfileSuccess("Thông tin cá nhân đã được cập nhật thành công!");
+      setTimeout(() => {
+        profileModal.closeModal();
+        setProfileSuccess(null);
+      }, 2000);
     } catch (error) {
-      toast.error("Cập nhật thông tin thất bại");
       console.error(error);
+      setProfileError("Đã xảy ra lỗi khi cập nhật thông tin cá nhân. Vui lòng thử lại sau.");
     } finally {
       setIsLoadingProfile(false);
     }
@@ -79,22 +87,28 @@ export default function UserInfoCard() {
 
   const onSubmitPassword = async (data: PasswordChangeForm) => {
     setIsLoadingPassword(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
     try {
       await api.put("/auth/change-password", data);
-      toast.success("Đổi mật khẩu thành công");
-      passwordModal.closeModal();
+      setPasswordSuccess("Mật khẩu đã được đổi thành công!");
       passwordForm.reset();
+      setTimeout(() => {
+        passwordModal.closeModal();
+        setPasswordSuccess(null);
+      }, 2000);
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'response' in error
         ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Đổi mật khẩu thất bại"
         : "Đổi mật khẩu thất bại";
-      toast.error(message);
       console.error(error);
+      setPasswordError(message);
     } finally {
       setIsLoadingPassword(false);
     }
   };
 
+  // Reset form when user data changes
   useEffect(() => {
     if (user) {
       profileForm.reset({
@@ -107,9 +121,25 @@ export default function UserInfoCard() {
         gender: user.gender ?? 1,
         dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : "",
         address: user.address || "",
+        leaveDays: user.leaveDays || 0,
       });
     }
   }, [user, profileForm]);
+
+  // Clear messages when modals open
+  useEffect(() => {
+    if (profileModal.isOpen) {
+      setProfileError(null);
+      setProfileSuccess(null);
+    }
+  }, [profileModal.isOpen]);
+
+  useEffect(() => {
+    if (passwordModal.isOpen) {
+      setPasswordError(null);
+      setPasswordSuccess(null);
+    }
+  }, [passwordModal.isOpen]);
 
   if (!user) {
     return null;
@@ -370,6 +400,39 @@ export default function UserInfoCard() {
               Cập nhật thông tin chi tiết để giữ hồ sơ của bạn luôn mới nhất.
             </p>
           </div>
+
+          {/* Error Message */}
+          {profileError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/50 dark:border-red-800">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 dark:text-red-300">{profileError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {profileSuccess && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/50 dark:border-green-800">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400 dark:text-green-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700 dark:text-green-300">{profileSuccess}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="flex flex-col" onSubmit={profileForm.handleSubmit(onSubmitProfile)}>
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div className="mt-7">
@@ -487,6 +550,39 @@ export default function UserInfoCard() {
               Nhập mật khẩu hiện tại và mật khẩu mới để thay đổi.
             </p>
           </div>
+
+          {/* Error Message */}
+          {passwordError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/50 dark:border-red-800">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 dark:text-red-300">{passwordError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {passwordSuccess && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/50 dark:border-green-800">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400 dark:text-green-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700 dark:text-green-300">{passwordSuccess}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)}>
             <div className="space-y-5">
               <div>

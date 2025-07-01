@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
 import { CreateAccountModal } from './CreateAccountModal';
 import { AccountDetailModal } from '@/components/admin/accounts/AccountDetailModal';
 
@@ -31,13 +30,6 @@ interface Group {
   name: string;
 }
 
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-  role: string;
-}
-
 export const AccountList: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -46,7 +38,6 @@ export const AccountList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const { user } = useAuth() as { user: User | null };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,7 +64,7 @@ export const AccountList: React.FC = () => {
     try {
       const response = await api.get(`/admin/accounts?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
       const data = response.data;
-      
+
       if (data && typeof data === 'object' && 'accounts' in data && 'pagination' in data) {
         setAccounts(data.accounts);
         setTotalItems(data.pagination.total);
@@ -126,20 +117,6 @@ export const AccountList: React.FC = () => {
     setPageSize(newSize);
     setCurrentPage(1); // Reset to first page
     fetchAccounts(1, newSize, searchQuery);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this account?')) {
-      return;
-    }
-
-    try {
-      await api.delete(`/admin/accounts/${id}`);
-      fetchAccounts(currentPage, pageSize, searchQuery); // Refresh current page
-    } catch (err) {
-      console.error('Error deleting account:', err);
-      alert('Failed to delete account');
-    }
   };
 
   const getStatusColor = (status: string) => {
@@ -280,14 +257,6 @@ export const AccountList: React.FC = () => {
                   >
                     Sửa
                   </button>
-                  {user?._id !== account._id && (
-                    <button
-                      onClick={() => handleDelete(account._id)}
-                      className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      Xóa
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}
@@ -338,11 +307,11 @@ export const AccountList: React.FC = () => {
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
-          
+
           <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
             Trang {currentPage} trên {totalPages}
           </span>
-          
+
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
