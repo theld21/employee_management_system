@@ -235,6 +235,189 @@ exports.getAttendanceReport = async (req, res) => {
       });
     }
 
+    // Work day constants (matching client constants)
+    const WORK_START_HOUR = 8;
+    const WORK_START_MINUTE = 30;
+    const WORK_END_HOUR = 17;
+    const WORK_END_MINUTE = 30;
+    const LUNCH_START_HOUR = 12;
+    const LUNCH_START_MINUTE = 0;
+    const LUNCH_END_HOUR = 13;
+    const LUNCH_END_MINUTE = 0;
+    const WORK_HOURS_REQUIRED = 8;
+
+    // Helper function to calculate work day ratio from check-in/check-out times
+    // Returns work day ratio (0.00 to 1.00) where 1.00 = full 8-hour work day
+    const calculateWorkDayRatio = (
+      checkIn,
+      checkOut,
+      leaveHours = 0,
+      leaveType = null
+    ) => {
+      if (!checkIn || !checkOut) return 0;
+
+      const checkInTime = new Date(checkIn);
+      const checkOutTime = new Date(checkOut);
+
+      // Define work periods
+      const morningStart = new Date(checkInTime);
+      morningStart.setHours(WORK_START_HOUR, WORK_START_MINUTE, 0, 0);
+      const morningEnd = new Date(checkInTime);
+      morningEnd.setHours(LUNCH_START_HOUR, LUNCH_START_MINUTE, 0, 0);
+      const afternoonStart = new Date(checkInTime);
+      afternoonStart.setHours(LUNCH_END_HOUR, LUNCH_END_MINUTE, 0, 0);
+      const afternoonEnd = new Date(checkInTime);
+      afternoonEnd.setHours(WORK_END_HOUR, WORK_END_MINUTE, 0, 0);
+
+      let totalWorkMinutes = 0;
+
+      // Logic based on leave type
+      if (leaveType === "morning") {
+        // Nghỉ sáng: chỉ tính giờ làm buổi chiều
+        const effectiveAfternoonStart =
+          checkInTime > afternoonStart ? checkInTime : afternoonStart;
+        const effectiveAfternoonEnd =
+          checkOutTime < afternoonEnd ? checkOutTime : afternoonEnd;
+
+        if (effectiveAfternoonEnd > effectiveAfternoonStart) {
+          totalWorkMinutes =
+            (effectiveAfternoonEnd - effectiveAfternoonStart) / (1000 * 60);
+        }
+
+        // Add leave hours for morning
+        totalWorkMinutes += leaveHours * 60;
+      } else if (leaveType === "afternoon") {
+        // Nghỉ chiều: chỉ tính giờ làm buổi sáng
+        const effectiveMorningStart =
+          checkInTime > morningStart ? checkInTime : morningStart;
+        const effectiveMorningEnd =
+          checkOutTime < morningEnd ? checkOutTime : morningEnd;
+
+        if (effectiveMorningEnd > effectiveMorningStart) {
+          totalWorkMinutes =
+            (effectiveMorningEnd - effectiveMorningStart) / (1000 * 60);
+        }
+
+        // Add leave hours for afternoon
+        totalWorkMinutes += leaveHours * 60;
+      } else {
+        // Normal work day calculation
+        let workMinutes = 0;
+
+        // Calculate morning work hours
+        if (checkInTime < morningEnd && checkOutTime > morningStart) {
+          const morningWorkStart =
+            checkInTime > morningStart ? checkInTime : morningStart;
+          const morningWorkEnd =
+            checkOutTime < morningEnd ? checkOutTime : morningEnd;
+          workMinutes += (morningWorkEnd - morningWorkStart) / (1000 * 60);
+        }
+
+        // Calculate afternoon work hours
+        if (checkInTime < afternoonEnd && checkOutTime > afternoonStart) {
+          const afternoonWorkStart =
+            checkInTime > afternoonStart ? checkInTime : afternoonStart;
+          const afternoonWorkEnd =
+            checkOutTime < afternoonEnd ? checkOutTime : afternoonEnd;
+          workMinutes += (afternoonWorkEnd - afternoonWorkStart) / (1000 * 60);
+        }
+
+        totalWorkMinutes = workMinutes + leaveHours * 60;
+      }
+
+      // Cap at maximum 8 hours (480 minutes)
+      const maxWorkMinutes = WORK_HOURS_REQUIRED * 60; // 480 minutes
+      const cappedWorkMinutes = Math.min(
+        Math.max(0, totalWorkMinutes),
+        maxWorkMinutes
+      );
+
+      // Convert to work day ratio: actual minutes / (8 * 60)
+      const workDayRatio = cappedWorkMinutes / maxWorkMinutes;
+
+      return workDayRatio;
+    };
+
+    // Helper function to calculate leave hours and type for a specific day
+    const calculateLeaveHoursForDay = (date, leaveRequests) => {
+      let morningLeaveHours = 0;
+      let afternoonLeaveHours = 0;
+
+      leaveRequests.forEach((req) => {
+        const reqStart = new Date(req.startTime);
+        const reqEnd = new Date(req.endTime);
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // Check if leave request overlaps with this day
+        if (reqEnd >= dayStart && reqStart <= dayEnd) {
+          // Calculate overlap period
+          const overlapStart = new Date(
+            Math.max(reqStart.getTime(), dayStart.getTime())
+          );
+          const overlapEnd = new Date(
+            Math.min(reqEnd.getTime(), dayEnd.getTime())
+          );
+
+          // Define work periods (morning: 8:30-12:00, afternoon: 13:00-17:30)
+          const morningStart = new Date(date);
+          morningStart.setHours(WORK_START_HOUR, WORK_START_MINUTE, 0, 0);
+          const morningEnd = new Date(date);
+          morningEnd.setHours(LUNCH_START_HOUR, LUNCH_START_MINUTE, 0, 0);
+          const afternoonStart = new Date(date);
+          afternoonStart.setHours(LUNCH_END_HOUR, LUNCH_END_MINUTE, 0, 0);
+          const afternoonEnd = new Date(date);
+          afternoonEnd.setHours(WORK_END_HOUR, WORK_END_MINUTE, 0, 0);
+
+          // Calculate leave hours for morning period
+          if (overlapEnd > morningStart && overlapStart < morningEnd) {
+            const morningLeaveStart = new Date(
+              Math.max(overlapStart.getTime(), morningStart.getTime())
+            );
+            const morningLeaveEnd = new Date(
+              Math.min(overlapEnd.getTime(), morningEnd.getTime())
+            );
+            const morningLeaveMinutes =
+              (morningLeaveEnd - morningLeaveStart) / (1000 * 60);
+            morningLeaveHours += morningLeaveMinutes / 60;
+          }
+
+          // Calculate leave hours for afternoon period
+          if (overlapEnd > afternoonStart && overlapStart < afternoonEnd) {
+            const afternoonLeaveStart = new Date(
+              Math.max(overlapStart.getTime(), afternoonStart.getTime())
+            );
+            const afternoonLeaveEnd = new Date(
+              Math.min(overlapEnd.getTime(), afternoonEnd.getTime())
+            );
+            const afternoonLeaveMinutes =
+              (afternoonLeaveEnd - afternoonLeaveStart) / (1000 * 60);
+            afternoonLeaveHours += afternoonLeaveMinutes / 60;
+          }
+        }
+      });
+
+      const totalLeaveHours = morningLeaveHours + afternoonLeaveHours;
+
+      // Determine leave type
+      let leaveType = null;
+      if (morningLeaveHours > 0 && afternoonLeaveHours === 0) {
+        leaveType = "morning";
+      } else if (morningLeaveHours === 0 && afternoonLeaveHours > 0) {
+        leaveType = "afternoon";
+      }
+      // If both periods have leave or no leave, leaveType remains null
+
+      return {
+        totalLeaveHours,
+        morningLeaveHours,
+        afternoonLeaveHours,
+        leaveType,
+      };
+    };
+
     // Tạo khoảng thời gian cho tháng
     const startDate = new Date(year, month - 1, 1); // month is 0-indexed
     const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
@@ -242,13 +425,14 @@ exports.getAttendanceReport = async (req, res) => {
     // Lấy danh sách tất cả user
     const User = require("../models/User");
     const users = await User.find({ role: { $ne: "admin" } })
-      .select("name email employeeId")
-      .sort({ name: 1 });
+      .select("firstName lastName email employeeId")
+      .populate("group", "name")
+      .sort({ employeeId: 1, firstName: 1 }); // Sort by employeeId first, then firstName
 
     // Lấy tất cả attendance trong tháng sử dụng checkIn
     const attendances = await Attendance.find({
       checkIn: { $gte: startDate, $lte: endDate },
-    }).populate("user", "name email employeeId");
+    }).populate("user", "firstName lastName email employeeId");
 
     // Lấy tất cả leave requests đã approved trong tháng
     const requests = await Request.find({
@@ -268,7 +452,7 @@ exports.getAttendanceReport = async (req, res) => {
           ],
         },
       ],
-    }).populate("user", "name email employeeId");
+    }).populate("user", "firstName lastName email employeeId");
 
     // Tạo map attendance theo user và ngày (sử dụng checkIn)
     const attendanceMap = new Map();
@@ -282,63 +466,30 @@ exports.getAttendanceReport = async (req, res) => {
       attendanceMap.get(userId).set(dateKey, att);
     });
 
-    // Tạo map leave requests theo user và ngày
-    const leaveMap = new Map();
+    // Tạo map leave requests theo user
+    const userLeaveRequestsMap = new Map();
     requests.forEach((req) => {
       const userId = req.user._id.toString();
-      const startDate = new Date(req.startTime);
-      const endDate = new Date(req.endTime);
-
-      if (!leaveMap.has(userId)) {
-        leaveMap.set(userId, new Map());
+      if (!userLeaveRequestsMap.has(userId)) {
+        userLeaveRequestsMap.set(userId, []);
       }
-
-      for (
-        let d = new Date(startDate);
-        d <= endDate;
-        d.setDate(d.getDate() + 1)
-      ) {
-        const dateKey = d.toISOString().split("T")[0];
-        if (
-          d >= new Date(year, month - 1, 1) &&
-          d <= new Date(year, month, 0)
-        ) {
-          // Tính leave type cho ngày này
-          const leaveStart = new Date(
-            Math.max(d.getTime(), startDate.getTime())
-          );
-          const leaveEnd = new Date(
-            Math.min(new Date(d).setHours(23, 59, 59, 999), endDate.getTime())
-          );
-          const noonStart = new Date(d);
-          noonStart.setHours(12, 0, 0, 0);
-          const noonEnd = new Date(d);
-          noonEnd.setHours(13, 0, 0, 0);
-          const isFullDay = leaveStart < noonEnd && leaveEnd > noonStart;
-
-          const currentLeave = leaveMap.get(userId).get(dateKey);
-          if (!currentLeave || currentLeave < (isFullDay ? 1 : 0.5)) {
-            leaveMap.get(userId).set(dateKey, isFullDay ? 1 : 0.5);
-          }
-        }
-      }
+      userLeaveRequestsMap.get(userId).push(req);
     });
 
     // Tính toán dữ liệu cho từng user
     const reportData = users.map((user) => {
       const userId = user._id.toString();
       const userAttendances = attendanceMap.get(userId) || new Map();
-      const userLeaves = leaveMap.get(userId) || new Map();
+      const userLeaveRequests = userLeaveRequestsMap.get(userId) || [];
 
       const dailyData = [];
-      let totalDays = 0;
+      let totalWorkDays = 0;
 
       // Lặp qua từng ngày trong tháng
-      for (
-        let d = new Date(year, month - 1, 1);
-        d <= new Date(year, month, 0);
-        d.setDate(d.getDate() + 1)
-      ) {
+      const daysInMonth = new Date(year, month, 0).getDate(); // Get total days in month
+      for (let day = 1; day <= daysInMonth; day++) {
+        // Create UTC date to avoid timezone issues
+        const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)); // Set to noon UTC
         const dateKey = d.toISOString().split("T")[0];
         const isWorkDay = d.getDay() >= 1 && d.getDay() <= 5; // Mon-Fri
 
@@ -346,41 +497,96 @@ exports.getAttendanceReport = async (req, res) => {
           dailyData.push({
             date: dateKey,
             day: d.getDate(),
-            work: 0,
-            leave: 0,
+            workDayRatio: 0.0,
             note: "Cuối tuần",
           });
           continue;
         }
 
         const attendance = userAttendances.get(dateKey);
-        const leaveValue = userLeaves.get(dateKey) || 0;
+        const leaveData = calculateLeaveHoursForDay(d, userLeaveRequests);
+        const {
+          totalLeaveHours,
+          morningLeaveHours,
+          afternoonLeaveHours,
+          leaveType,
+        } = leaveData;
 
-        let workDays = 0;
+        let workHours = 0;
         let note = "";
 
-        if (leaveValue > 0) {
-          workDays = leaveValue; // Leave counts as work days
-          note = leaveValue === 1 ? "Nghỉ 1P" : "Nghỉ 1/2P";
-          totalDays += leaveValue;
+        if (totalLeaveHours >= WORK_HOURS_REQUIRED) {
+          // Full day leave
+          workHours = 1.0; // Full work day
+          note = `1P`; // Simplified note for full day leave
+          totalWorkDays += workHours;
+        } else if (totalLeaveHours > 0) {
+          // Partial leave
+          if (attendance && attendance.checkIn && attendance.checkOut) {
+            workHours = calculateWorkDayRatio(
+              attendance.checkIn,
+              attendance.checkOut,
+              totalLeaveHours,
+              leaveType
+            );
+
+            // Generate simplified note for partial leave
+            if (leaveType === "morning") {
+              note = `1/2P`; // Half day morning leave
+            } else if (leaveType === "afternoon") {
+              note = `1/2P`; // Half day afternoon leave
+            } else {
+              // Mixed leave - calculate fraction
+              const leaveRatio = totalLeaveHours / WORK_HOURS_REQUIRED;
+              if (leaveRatio >= 0.5) {
+                note = `1/2P+`; // More than half day leave
+              } else {
+                note = `<1/2P`; // Less than half day leave
+              }
+            }
+          } else {
+            // User has leave but didn't check in/out
+            // Apply minimum 0.5 work day for partial leave (morning or afternoon)
+            if (leaveType === "morning" || leaveType === "afternoon") {
+              workHours = 0.5; // Minimum half day for partial leave
+              note = `1/2P`; // Half day leave
+            } else {
+              // Mixed leave or full leave hours
+              const calculatedRatio = totalLeaveHours / WORK_HOURS_REQUIRED;
+              workHours = Math.max(0.5, calculatedRatio); // Minimum 0.5 for any leave
+              if (calculatedRatio >= 0.5) {
+                note = `1/2P+`;
+              } else {
+                note = `<1/2P`;
+              }
+            }
+          }
+          totalWorkDays += workHours;
         } else if (attendance && attendance.checkIn && attendance.checkOut) {
-          workDays = 1;
-          note = "Đi làm";
-          totalDays += 1;
+          // Normal work day with check-in and check-out
+          workHours = calculateWorkDayRatio(
+            attendance.checkIn,
+            attendance.checkOut,
+            0,
+            null
+          );
+
+          note = ``; // No note for normal work
+          totalWorkDays += workHours;
         } else if (attendance && attendance.checkIn) {
-          workDays = 0.5;
+          // Missing check-out
+          workHours = 0;
           note = "Thiếu checkout";
-          totalDays += 0.5;
         } else {
-          workDays = 0;
+          // Absent
+          workHours = 0;
           note = "Vắng";
         }
 
         dailyData.push({
           date: dateKey,
           day: d.getDate(),
-          work: workDays,
-          leave: leaveValue,
+          workDayRatio: parseFloat(workHours.toFixed(2)),
           note: note,
         });
       }
@@ -388,12 +594,14 @@ exports.getAttendanceReport = async (req, res) => {
       return {
         user: {
           _id: user._id,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           employeeId: user.employeeId,
+          group: user.group,
         },
         dailyData,
-        totalDays,
+        totalWorkDays: parseFloat(totalWorkDays.toFixed(2)),
       };
     });
 

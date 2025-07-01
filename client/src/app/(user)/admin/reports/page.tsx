@@ -8,20 +8,24 @@ import Spinner from '@/components/ui/loading/Spinner';
 interface DailyData {
   date: string;
   day: number;
-  work: number;
-  leave: number;
+  workDayRatio: number;
   note: string;
 }
 
 interface UserReport {
   user: {
     _id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     employeeId: string;
+    group?: {
+      _id: string;
+      name: string;
+    };
   };
   dailyData: DailyData[];
-  totalDays: number;
+  totalWorkDays: number;
 }
 
 interface ReportData {
@@ -32,7 +36,7 @@ interface ReportData {
   data: UserReport[];
 }
 
-export default function AttendanceReports() {
+export default function WorkDayReports() {
   const { user } = useAuth();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -46,7 +50,7 @@ export default function AttendanceReports() {
       setReportData(response.data);
     } catch (error) {
       console.error('Error fetching report:', error);
-      alert('Có lỗi xảy ra khi tải báo cáo');
+      alert('Có lỗi xảy ra khi tải báo cáo ngày công');
     } finally {
       setLoading(false);
     }
@@ -59,40 +63,43 @@ export default function AttendanceReports() {
     const excelData = [];
 
     // Header row
-    const header = ['STT', 'Tên nhân viên', 'Mã NV'];
+    const header = ['STT', 'Mã NV', 'Tên nhân viên', 'Email', 'Nhóm'];
     const daysInMonth = new Date(year, month, 0).getDate();
     for (let i = 1; i <= daysInMonth; i++) {
       header.push(`${i}`);
     }
-    header.push('Tổng công');
+    header.push('Tổng ngày công');
     excelData.push(header);
 
     // Data rows
     reportData.data.forEach((userReport, index) => {
       const row = [
         index + 1,
-        userReport.user.name,
-        userReport.user.employeeId || userReport.user.email
+        userReport.user.employeeId || userReport.user.email,
+        `${userReport.user.firstName} ${userReport.user.lastName}`,
+        userReport.user.email,
+        userReport.user.group?.name || 'Chưa có nhóm'
       ];
 
       // Add daily data
       userReport.dailyData.forEach(day => {
         let cellValue = '';
-        if (day.work > 0) {
-          cellValue = day.work.toString();
-          if (day.leave > 0) {
-            cellValue += ` (${day.leave === 1 ? '1P' : '1/2P'})`;
+        if (day.workDayRatio > 0) {
+          cellValue = day.workDayRatio.toFixed(2);
+          // Add leave note if exists
+          if (day.note && !day.note.includes('Cuối tuần') && !day.note.includes('Vắng') && !day.note.includes('Thiếu')) {
+            cellValue += ` (${day.note})`;
           }
         } else if (day.note === 'Cuối tuần') {
           cellValue = '-';
         } else {
-          cellValue = '0';
+          cellValue = '0.00';
         }
         row.push(cellValue);
       });
 
       // Add total
-      row.push(userReport.totalDays);
+      row.push(userReport.totalWorkDays.toFixed(2));
       excelData.push(row);
     });
 
@@ -103,21 +110,23 @@ export default function AttendanceReports() {
     // Thiết lập độ rộng cột
     const colWidths = [
       { width: 5 },  // STT
+      { width: 12 }, // Mã NV
       { width: 20 }, // Tên
-      { width: 15 }, // Mã NV
+      { width: 25 }, // Email
+      { width: 15 }, // Nhóm
     ];
     for (let i = 0; i < daysInMonth; i++) {
-      colWidths.push({ width: 8 }); // Các ngày
+      colWidths.push({ width: 10 }); // Các ngày (wider for notes)
     }
-    colWidths.push({ width: 10 }); // Tổng công
+    colWidths.push({ width: 12 }); // Tổng ngày công
 
     ws['!cols'] = colWidths;
 
     // Thêm worksheet vào workbook
-    XLSX.utils.book_append_sheet(wb, ws, `Cong_${month}_${year}`);
+    XLSX.utils.book_append_sheet(wb, ws, `BaoCaoNgayCong_${month}_${year}`);
 
     // Xuất file
-    const fileName = `BaoCaoCong_${month}_${year}.xlsx`;
+    const fileName = `BaoCaoNgayCong_${month}_${year}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -129,7 +138,7 @@ export default function AttendanceReports() {
     <div className="space-y-6">
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-          Báo cáo chấm công
+          Báo cáo ngày công
         </h1>
 
         {/* Filter controls */}
@@ -178,7 +187,7 @@ export default function AttendanceReports() {
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
             >
-              {loading ? <Spinner /> : 'Tải báo cáo'}
+              {loading ? <Spinner /> : 'Tải báo cáo ngày công'}
             </button>
 
             {reportData && (
@@ -202,10 +211,16 @@ export default function AttendanceReports() {
                     STT
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Mã NV
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Tên nhân viên
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Mã NV
+                    Email
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Nhóm
                   </th>
                   {Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => (
                     <th key={i + 1} className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -213,7 +228,7 @@ export default function AttendanceReports() {
                     </th>
                   ))}
                   <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Tổng công
+                    Tổng ngày công
                   </th>
                 </tr>
               </thead>
@@ -224,31 +239,39 @@ export default function AttendanceReports() {
                       {index + 1}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
-                      {userReport.user.name}
+                      {userReport.user.employeeId || userReport.user.email}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
-                      {userReport.user.employeeId || userReport.user.email}
+                      {userReport.user.firstName} {userReport.user.lastName}
+                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
+                      {userReport.user.email}
+                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
+                      {userReport.user.group?.name || 'Chưa có nhóm'}
                     </td>
                     {userReport.dailyData.map((day, dayIndex) => (
                       <td key={dayIndex} className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center text-xs text-gray-900 dark:text-gray-100">
-                        {day.work > 0 ? (
-                          <span>
-                            {day.work}
-                            {day.leave > 0 && (
-                              <span className="text-blue-600 dark:text-blue-400">
-                                ({day.leave === 1 ? '1P' : '1/2P'})
-                              </span>
+                        {day.workDayRatio > 0 ? (
+                          <span className={
+                            day.workDayRatio === 1.0
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }>
+                            {day.workDayRatio.toFixed(2)}
+                            {day.note && !day.note.includes('Cuối tuần') && !day.note.includes('Vắng') && !day.note.includes('Thiếu') && day.note.trim() !== '' && (
+                              <span> ({day.note})</span>
                             )}
                           </span>
                         ) : day.note === 'Cuối tuần' ? (
                           <span className="text-gray-400">-</span>
                         ) : (
-                          <span className="text-red-600 dark:text-red-400">0</span>
+                          <span className="text-black dark:text-gray-300">0.00</span>
                         )}
                       </td>
                     ))}
                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {userReport.totalDays}
+                      {userReport.totalWorkDays.toFixed(2)}
                     </td>
                   </tr>
                 ))}

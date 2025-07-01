@@ -55,7 +55,36 @@ export function getCheckOutColor(checkIn?: string, checkOut?: string): string {
       }
     }
     const totalHours = totalMs / (1000 * 60 * 60);
-    if (totalHours < WORK_HOURS_REQUIRED) return '#F44336';
+    if (totalHours < WORK_HOURS_REQUIRED) return '#F44336'; // Insufficient hours - red
+    if (totalHours > 12) return '#FF9800'; // Unusual hours (>12h) - orange warning
+    if (totalHours > WORK_HOURS_REQUIRED + 2) return '#2196F3'; // Overtime (>10h) - blue
   }
-  return '#4CAF50';
+  return '#4CAF50'; // Normal hours - green
+}
+
+// Hàm tính thời gian làm việc thực tế (giống logic backend)
+export function calculateWorkHours(checkIn?: string, checkOut?: string): number {
+  if (!checkIn || !checkOut) return 0;
+
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+
+  // Tính tổng thời gian
+  let totalMs = checkOutDate.getTime() - checkInDate.getTime();
+
+  // Trừ thời gian nghỉ trưa nếu có giao với ca làm
+  const lunchStart = new Date(checkInDate);
+  lunchStart.setHours(LUNCH_START_HOUR, LUNCH_START_MINUTE, 0, 0);
+  const lunchEnd = new Date(checkInDate);
+  lunchEnd.setHours(LUNCH_END_HOUR, LUNCH_END_MINUTE, 0, 0);
+
+  if (checkInDate < lunchEnd && checkOutDate > lunchStart) {
+    const overlapStart = Math.max(checkInDate.getTime(), lunchStart.getTime());
+    const overlapEnd = Math.min(checkOutDate.getTime(), lunchEnd.getTime());
+    if (overlapEnd > overlapStart) {
+      totalMs -= (overlapEnd - overlapStart);
+    }
+  }
+
+  return Math.max(0, totalMs / (1000 * 60 * 60));
 } 
