@@ -29,7 +29,8 @@ const editorExtensions = [
 const CreateNewsModal: React.FC<CreateNewsModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
-  const [thumbnail, setThumbnail] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState('');
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,25 +45,78 @@ const CreateNewsModal: React.FC<CreateNewsModalProps> = ({ isOpen, onClose, onSu
     },
   });
 
+  // Handle file upload and create preview
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (3MB = 3 * 1024 * 1024 bytes)
+    if (file.size > 3 * 1024 * 1024) {
+      setError('Kích thước ảnh không được vượt quá 3MB');
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError('Vui lòng chọn file ảnh');
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove image
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setPreviewImage('');
+    // Reset file input
+    const fileInput = document.getElementById('thumbnail-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      await api.post('/news', {
-        title,
-        content: editor?.getHTML() || '',
-        thumbnail,
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      // Create FormData to send file
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', editor?.getHTML() || '');
+      formData.append('tags', tags);
+
+      if (selectedFile) {
+        formData.append('thumbnail', selectedFile);
+      }
+
+      await api.post('/news', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
+
+      // Reset form
       setTitle('');
-      setThumbnail('');
+      setSelectedFile(null);
+      setPreviewImage('');
       setTags('');
       editor?.commands.setContent('');
+      // Reset file input
+      const fileInput = document.getElementById('thumbnail-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Đăng bài thất bại');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Đăng bài thất bại');
     } finally {
       setLoading(false);
     }
@@ -93,13 +147,30 @@ const CreateNewsModal: React.FC<CreateNewsModalProps> = ({ isOpen, onClose, onSu
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Ảnh đại diện (URL)</label>
+          <label className="block text-sm font-medium mb-1">Ảnh đại diện (tối đa 3MB)</label>
           <input
-            type="text"
-            value={thumbnail}
-            onChange={e => setThumbnail(e.target.value)}
-            className="w-full border rounded px-3 py-2 dark:bg-gray-800 dark:text-white"
+            id="thumbnail-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="w-full border rounded px-3 py-2 dark:bg-gray-800 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
+          {previewImage && (
+            <div className="mt-2 relative inline-block">
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="w-32 h-20 object-cover rounded border"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Tags (phân cách bởi dấu phẩy)</label>

@@ -9,13 +9,35 @@ exports.createNews = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, content, thumbnail, tags } = req.body;
+    const { title, content, tags } = req.body;
+    let thumbnail = "";
+
+    // Convert uploaded file to base64 if exists
+    if (req.file) {
+      const base64Image = `data:${
+        req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
+      thumbnail = base64Image;
+    }
+
+    // Parse tags if it's a string
+    let parsedTags = [];
+    if (tags) {
+      if (typeof tags === "string") {
+        parsedTags = tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      }
+    }
 
     const news = new News({
       title,
       content,
       thumbnail,
-      tags,
+      tags: parsedTags,
       createdBy: req.user.id,
     });
 
@@ -97,7 +119,7 @@ exports.updateNews = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, content, thumbnail, tags } = req.body;
+    const { title, content, tags } = req.body;
 
     const news = await News.findById(req.params.id);
     if (!news) {
@@ -112,10 +134,36 @@ exports.updateNews = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
+    // Update basic fields
     news.title = title;
     news.content = content;
-    news.thumbnail = thumbnail;
-    news.tags = tags;
+
+    // Handle thumbnail update
+    if (req.file) {
+      // New file uploaded, convert to base64
+      const base64Image = `data:${
+        req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
+      news.thumbnail = base64Image;
+    } else if (req.body.removeThumbnail === "true") {
+      // Remove thumbnail if explicitly requested
+      news.thumbnail = "";
+    }
+    // If no file and removeThumbnail is not true, keep existing thumbnail
+
+    // Parse tags if it's a string
+    let parsedTags = [];
+    if (tags) {
+      if (typeof tags === "string") {
+        parsedTags = tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      }
+    }
+    news.tags = parsedTags;
 
     await news.save();
 

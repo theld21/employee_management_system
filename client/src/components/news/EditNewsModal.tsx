@@ -34,7 +34,10 @@ const editorExtensions = [
 
 const EditNewsModal: React.FC<EditNewsModalProps> = ({ isOpen, onClose, onSuccess, news }) => {
   const [title, setTitle] = useState(news.title);
-  const [thumbnail, setThumbnail] = useState(news.thumbnail || '');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentThumbnail, setCurrentThumbnail] = useState(news.thumbnail || '');
+  const [previewImage, setPreviewImage] = useState('');
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
   const [tags, setTags] = useState(news.tags?.join(', ') || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,25 +58,105 @@ const EditNewsModal: React.FC<EditNewsModalProps> = ({ isOpen, onClose, onSucces
     }
   }, [editor, news.content]);
 
+  useEffect(() => {
+    // Update state when news prop changes
+    setTitle(news.title);
+    setCurrentThumbnail(news.thumbnail || '');
+    setPreviewImage('');
+    setSelectedFile(null);
+    setRemoveThumbnail(false);
+    setTags(news.tags?.join(', ') || '');
+  }, [news]);
+
+  // Handle file upload and create preview
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (3MB = 3 * 1024 * 1024 bytes)
+    if (file.size > 3 * 1024 * 1024) {
+      setError('Kích thước ảnh không được vượt quá 3MB');
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError('Vui lòng chọn file ảnh');
+      return;
+    }
+
+    setSelectedFile(file);
+    setRemoveThumbnail(false);
+    setError(null);
+
+    // Create preview URL for new file
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove current thumbnail
+  const handleRemoveCurrentThumbnail = () => {
+    setCurrentThumbnail('');
+    setRemoveThumbnail(true);
+    setSelectedFile(null);
+    setPreviewImage('');
+    // Reset file input
+    const fileInput = document.getElementById('edit-thumbnail-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
+  // Remove new selected file
+  const handleRemoveNewFile = () => {
+    setSelectedFile(null);
+    setPreviewImage('');
+    // Reset file input
+    const fileInput = document.getElementById('edit-thumbnail-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      await api.put(`/news/${news._id}`, {
-        title,
-        content: editor?.getHTML() || '',
-        thumbnail,
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      // Create FormData to send file
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', editor?.getHTML() || '');
+      formData.append('tags', tags);
+
+      if (selectedFile) {
+        formData.append('thumbnail', selectedFile);
+      } else if (removeThumbnail) {
+        formData.append('removeThumbnail', 'true');
+      }
+
+      await api.put(`/news/${news._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
+
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Cập nhật bài viết thất bại');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Cập nhật bài viết thất bại');
     } finally {
       setLoading(false);
     }
   };
+
+  // Determine which image to show
+  const getDisplayImage = () => {
+    if (previewImage) return previewImage; // New selected file preview
+    if (currentThumbnail && !removeThumbnail) return currentThumbnail; // Current thumbnail
+    return null;
+  };
+
+  const displayImage = getDisplayImage();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[1400px] p-6 dark:bg-gray-900 dark:text-white">
@@ -98,13 +181,36 @@ const EditNewsModal: React.FC<EditNewsModalProps> = ({ isOpen, onClose, onSucces
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Ảnh đại diện (URL)</label>
+          <label className="block text-sm font-medium mb-1">Ảnh đại diện (tối đa 3MB)</label>
+          {displayImage && (
+            <div className="mb-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                {previewImage ? 'Ảnh mới sẽ được tải lên:' : 'Ảnh hiện tại:'}
+              </div>
+              <div className="relative inline-block">
+                <img
+                  src={displayImage}
+                  alt={previewImage ? "New thumbnail preview" : "Current thumbnail"}
+                  className="w-32 h-20 object-cover rounded border"
+                />
+                <button
+                  type="button"
+                  onClick={previewImage ? handleRemoveNewFile : handleRemoveCurrentThumbnail}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
           <input
-            type="text"
-            value={thumbnail}
-            onChange={e => setThumbnail(e.target.value)}
-            className="w-full border rounded px-3 py-2 dark:bg-gray-800 dark:text-white"
+            id="edit-thumbnail-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="w-full border rounded px-3 py-2 dark:bg-gray-800 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
+          <div className="text-xs text-gray-500 mt-1">Chọn ảnh mới để thay thế ảnh hiện tại (nếu có)</div>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Tags (phân cách bởi dấu phẩy)</label>

@@ -7,7 +7,6 @@ interface NewsDetailModalProps {
     content: string;
     thumbnail?: string;
     tags?: string[];
-    isNew?: boolean;
     createdBy: {
       firstName: string;
       lastName: string;

@@ -22,12 +22,9 @@ const SignInForm = () => {
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-900/80 sm:px-11 sm:py-11 w-full max-w-md">
-      <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
-        Sign In
+      <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white text-center">
+        Đăng nhập
       </h2>
-      <p className="mb-8 text-sm text-gray-600 dark:text-gray-400">
-        Sign in to your account to access your workspace
-      </p>
 
       {error && (
         <div className="mb-5 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
@@ -38,7 +35,7 @@ const SignInForm = () => {
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
           <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Username
+            Tên đăng nhập
           </label>
           <div className="relative">
             <input
@@ -47,7 +44,7 @@ const SignInForm = () => {
               value={formData.username}
               onChange={handleChange}
               required
-              placeholder="Enter your username"
+              placeholder="Nhập tên đăng nhập"
               className="w-full rounded-lg border border-gray-300 bg-transparent py-3.5 pl-4 pr-10 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/20"
             />
             <span className="absolute right-4 top-3.5 text-gray-500 dark:text-gray-400">
@@ -74,7 +71,7 @@ const SignInForm = () => {
 
         <div className="mb-6">
           <label className="mb-2.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Password
+            Mật khẩu
           </label>
           <div className="relative">
             <input
@@ -83,7 +80,7 @@ const SignInForm = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="Enter your password"
+              placeholder="Nhập mật khẩu"
               className="w-full rounded-lg border border-gray-300 bg-transparent py-3.5 pl-4 pr-10 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/20"
             />
             <span className="absolute right-4 top-3.5 text-gray-500 dark:text-gray-400">
@@ -114,7 +111,7 @@ const SignInForm = () => {
             disabled={loading}
             className="flex w-full items-center justify-center rounded-lg bg-blue-600 py-3.5 px-9 text-center font-medium text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 dark:bg-blue-500 dark:shadow-blue-800/30 dark:hover:bg-blue-600 transition-all duration-200 disabled:opacity-70"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </div>
       </form>

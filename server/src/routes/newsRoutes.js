@@ -2,6 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 const newsController = require("../controllers/newsController");
 const { auth, authorize } = require("../middlewares/auth");
+const upload = require("../middlewares/upload");
 
 const router = express.Router();
 
@@ -10,10 +11,10 @@ router.post(
   "/",
   auth,
   authorize("admin"),
+  upload.single("thumbnail"),
   [
     check("title", "Title is required").notEmpty(),
     check("content", "Content is required").notEmpty(),
-    check("tags", "Tags should be an array").isArray(),
   ],
   newsController.createNews
 );
@@ -29,10 +30,10 @@ router.put(
   "/:id",
   auth,
   authorize("admin"),
+  upload.single("thumbnail"),
   [
     check("title", "Title is required").notEmpty(),
     check("content", "Content is required").notEmpty(),
-    check("tags", "Tags should be an array").isArray(),
   ],
   newsController.updateNews
 );
