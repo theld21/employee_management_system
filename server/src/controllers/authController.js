@@ -20,7 +20,6 @@ exports.register = async (req, res) => {
       phoneNumber,
       address,
       position,
-      department,
     } = req.body;
 
     // Check if user already exists
@@ -39,7 +38,6 @@ exports.register = async (req, res) => {
       phoneNumber,
       address,
       position,
-      department,
       role: "employee",
     });
 
@@ -126,7 +124,9 @@ exports.login = async (req, res) => {
 // Get current user
 exports.getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id)
+      .select("-password")
+      .populate("group", "name");
     if (!user) {
       return res.status(404).json({ message: "Tài khoản không tồn tại" });
     }
@@ -147,7 +147,6 @@ exports.updateProfile = async (req, res) => {
       "phoneNumber",
       "address",
       "position",
-      "department",
       "gender",
       "dateOfBirth",
       "email",
@@ -168,9 +167,51 @@ exports.updateProfile = async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, {
       new: true,
-    }).select("-password");
+    })
+      .select("-password")
+      .populate("group", "name");
 
     res.json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};
+
+// Change password
+exports.changePassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: "Mật khẩu mới và xác nhận mật khẩu không khớp",
+      });
+    }
+
+    // Find the user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "Tài khoản không tồn tại" });
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Đổi mật khẩu thành công" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi máy chủ" });

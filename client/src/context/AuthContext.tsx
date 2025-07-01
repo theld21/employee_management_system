@@ -13,16 +13,20 @@ type User = {
   role: 'admin' | 'user';
   phoneNumber?: string;
   position?: string;
-  department?: string;
   address?: string;
   employeeId?: string;
   gender?: number;
   dateOfBirth?: string;
+  startDate?: string;
   status?: 'active' | 'inactive' | 'suspended';
-  group?: string;
+  group?: {
+    _id: string;
+    name: string;
+  };
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  leaveDays?: number;
 };
 
 type RegisterData = {
@@ -34,7 +38,6 @@ type RegisterData = {
   phoneNumber: string;
   address: string;
   position: string;
-  department: string;
 };
 
 type AuthContextType = {

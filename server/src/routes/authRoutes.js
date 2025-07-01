@@ -36,4 +36,18 @@ router.get("/me", auth, authController.getCurrentUser);
 // Update current user profile
 router.put("/profile", auth, authController.updateProfile);
 
+// Change password
+router.put(
+  "/change-password",
+  auth,
+  [
+    check("currentPassword", "Mật khẩu hiện tại là bắt buộc").not().isEmpty(),
+    check("newPassword", "Mật khẩu mới phải có ít nhất 6 ký tự").isLength({
+      min: 6,
+    }),
+    check("confirmPassword", "Xác nhận mật khẩu là bắt buộc").not().isEmpty(),
+  ],
+  authController.changePassword
+);
+
 module.exports = router;
