@@ -22,8 +22,7 @@ import {
 
 interface Attendance {
   _id: string;
-  date: string;
-  checkIn?: string;
+  checkIn: string;
   checkOut?: string;
 }
 
@@ -44,7 +43,6 @@ interface LeaveRequest {
 
 interface TodayAttendance {
   _id: string;
-  date: string;
   checkIn?: string;
   checkOut?: string;
 }
@@ -127,7 +125,7 @@ const AttendanceCalendar = () => {
       // Create maps for quick lookup
       const attendanceMap = new Map<string, Attendance>();
       attendance.forEach((att: Attendance) => {
-        const date = new Date(att.date);
+        const date = new Date(att.checkIn);
         attendanceMap.set(formatDate(date), att);
       });
 

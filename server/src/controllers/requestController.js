@@ -384,21 +384,28 @@ exports.processRequest = async (req, res) => {
           try {
             const requestDate = new Date(request.startTime);
             requestDate.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(requestDate);
+            endOfDay.setHours(23, 59, 59, 999);
 
+            // Find existing attendance using checkIn field
             let attendance = await Attendance.findOne({
               user: request.user._id,
-              date: requestDate,
+              checkIn: {
+                $gte: requestDate,
+                $lte: endOfDay,
+              },
             });
 
             if (!attendance) {
               attendance = new Attendance({
                 user: request.user._id,
-                date: requestDate,
+                checkIn: request.startTime,
+                checkOut: request.endTime,
               });
+            } else {
+              attendance.checkIn = request.startTime;
+              attendance.checkOut = request.endTime;
             }
-
-            attendance.checkIn = request.startTime;
-            attendance.checkOut = request.endTime;
 
             await attendance.save();
           } catch (error) {

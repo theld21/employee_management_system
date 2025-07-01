@@ -3,7 +3,7 @@ const Attendance = require("../models/Attendance");
 const Request = require("../models/Request");
 
 /**
- * Hàm hỗ trợ để lấy ngày bắt đầu và kết thúc của một ngày
+ * Hàm hỗ trợ để lấy ngày bắt đầu và kết thúc của một ngày từ checkIn time
  * @param {Date} date - Ngày cần xử lý
  * @returns {Object} - Đối tượng chứa startOfDay và endOfDay
  */
@@ -29,32 +29,27 @@ exports.checkIn = async (req, res) => {
     const now = new Date();
     const { startOfDay, endOfDay } = getDayBoundaries(now);
 
-    // Check if user already checked in today
-    let attendance = await Attendance.findOne({
+    // Check if user already checked in today using checkIn field
+    const attendance = await Attendance.findOne({
       user: userId,
-      date: {
+      checkIn: {
         $gte: startOfDay,
         $lte: endOfDay,
       },
     });
 
-    if (attendance && attendance.checkIn) {
+    if (attendance) {
       return res.status(400).json({ message: "Bạn đã điểm danh hôm nay" });
     }
 
-    // Create new attendance record or update existing
-    if (!attendance) {
-      attendance = new Attendance({
-        user: userId,
-        date: startOfDay,
-        checkIn: now,
-      });
-    } else {
-      attendance.checkIn = now;
-    }
+    // Create new attendance record
+    const newAttendance = new Attendance({
+      user: userId,
+      checkIn: now,
+    });
 
-    await attendance.save();
-    res.status(201).json(attendance);
+    await newAttendance.save();
+    res.status(201).json(newAttendance);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi máy chủ" });
@@ -73,16 +68,16 @@ exports.checkOut = async (req, res) => {
     const now = new Date();
     const { startOfDay, endOfDay } = getDayBoundaries(now);
 
-    // Check if user has checked in today
+    // Find today's attendance record using checkIn field
     const attendance = await Attendance.findOne({
       user: userId,
-      date: {
+      checkIn: {
         $gte: startOfDay,
         $lte: endOfDay,
       },
     });
 
-    if (!attendance || !attendance.checkIn) {
+    if (!attendance) {
       return res.status(400).json({ message: "Bạn cần điểm danh trước" });
     }
 
@@ -117,7 +112,8 @@ exports.getUserAttendance = async (req, res) => {
       const { startOfDay: start } = getDayBoundaries(new Date(startDate));
       const { endOfDay: end } = getDayBoundaries(new Date(endDate));
 
-      attendanceQuery.date = {
+      // Query using checkIn field instead of date
+      attendanceQuery.checkIn = {
         $gte: start,
         $lte: end,
       };
@@ -143,7 +139,7 @@ exports.getUserAttendance = async (req, res) => {
     }
 
     const [attendance, requests] = await Promise.all([
-      Attendance.find(attendanceQuery).sort({ date: -1 }),
+      Attendance.find(attendanceQuery).sort({ checkIn: -1 }),
       Request.find(requestQuery)
         .populate("user", "name email")
         .sort({ startTime: -1 }),
@@ -165,9 +161,10 @@ exports.getTodayAttendance = async (req, res) => {
     const userId = req.user.id;
     const { startOfDay, endOfDay } = getDayBoundaries();
 
+    // Query using checkIn field instead of date
     const attendance = await Attendance.findOne({
       user: userId,
-      date: {
+      checkIn: {
         $gte: startOfDay,
         $lte: endOfDay,
       },
@@ -198,7 +195,8 @@ exports.getTeamAttendance = async (req, res) => {
       const { startOfDay: start } = getDayBoundaries(new Date(startDate));
       const { endOfDay: end } = getDayBoundaries(new Date(endDate));
 
-      query.date = {
+      // Query using checkIn field instead of date
+      query.checkIn = {
         $gte: start,
         $lte: end,
       };
@@ -218,7 +216,7 @@ exports.getTeamAttendance = async (req, res) => {
 
     const attendance = await Attendance.find(query)
       .populate("user", "firstName lastName username email")
-      .sort({ date: -1 });
+      .sort({ checkIn: -1 });
 
     res.json(attendance);
   } catch (error) {
@@ -247,9 +245,9 @@ exports.getAttendanceReport = async (req, res) => {
       .select("name email employeeId")
       .sort({ name: 1 });
 
-    // Lấy tất cả attendance trong tháng
+    // Lấy tất cả attendance trong tháng sử dụng checkIn
     const attendances = await Attendance.find({
-      date: { $gte: startDate, $lte: endDate },
+      checkIn: { $gte: startDate, $lte: endDate },
     }).populate("user", "name email employeeId");
 
     // Lấy tất cả leave requests đã approved trong tháng
@@ -272,11 +270,12 @@ exports.getAttendanceReport = async (req, res) => {
       ],
     }).populate("user", "name email employeeId");
 
-    // Tạo map attendance theo user và ngày
+    // Tạo map attendance theo user và ngày (sử dụng checkIn)
     const attendanceMap = new Map();
     attendances.forEach((att) => {
       const userId = att.user._id.toString();
-      const dateKey = att.date.toISOString().split("T")[0];
+      // Lấy ngày từ checkIn time
+      const dateKey = att.checkIn.toISOString().split("T")[0];
       if (!attendanceMap.has(userId)) {
         attendanceMap.set(userId, new Map());
       }
