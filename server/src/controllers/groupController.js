@@ -424,7 +424,7 @@ exports.getAllUsers = async (req, res) => {
       ];
     }
 
-    const users = await User.find(searchQuery)
+    const users = await User.find({ ...searchQuery, role: { $ne: "admin" } })
       .select("firstName lastName username email role")
       .sort({ firstName: 1, lastName: 1 })
       .limit(100);

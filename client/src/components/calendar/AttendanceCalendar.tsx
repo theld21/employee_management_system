@@ -365,7 +365,7 @@ const AttendanceCalendar = () => {
       const response = await api.get('/groups/users');
       setUsers(response.data || []);
       // Set current user as default if not admin
-      if (response.data && response.data.length > 0) {
+      if (response.data && response.data.length > 0 && user?.role !== 'admin') {
         setSelectedUserId(response.data[0]._id);
       }
     } catch (error) {
