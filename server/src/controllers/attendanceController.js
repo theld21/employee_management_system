@@ -155,6 +155,74 @@ exports.getUserAttendance = async (req, res) => {
   }
 };
 
+// Get attendance for any user (admin only)
+exports.getAdminUserAttendance = async (req, res) => {
+  try {
+    const { startDate, endDate, userId } = req.query;
+
+    // Verify the user is admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền truy cập" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId là bắt buộc" });
+    }
+
+    let attendanceQuery = { user: userId };
+    let requestQuery = {
+      user: userId,
+      type: "leave-request",
+      status: 3,
+    };
+
+    if (startDate && endDate) {
+      const { startOfDay: start } = getDayBoundaries(new Date(startDate));
+      const { endOfDay: end } = getDayBoundaries(new Date(endDate));
+
+      // Query using checkIn field instead of date
+      attendanceQuery.checkIn = {
+        $gte: start,
+        $lte: end,
+      };
+
+      // For requests, check if startTime or endTime falls within the date range
+      requestQuery.$or = [
+        {
+          startTime: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+        {
+          endTime: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+        {
+          $and: [{ startTime: { $lte: start } }, { endTime: { $gte: end } }],
+        },
+      ];
+    }
+
+    const [attendance, requests] = await Promise.all([
+      Attendance.find(attendanceQuery).sort({ checkIn: -1 }),
+      Request.find(requestQuery)
+        .populate("user", "name email")
+        .sort({ startTime: -1 }),
+    ]);
+
+    res.json({
+      attendance,
+      requests,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+};
+
 // Get today's attendance for current user
 exports.getTodayAttendance = async (req, res) => {
   try {
@@ -628,4 +696,5 @@ module.exports = {
   getTodayAttendance: exports.getTodayAttendance,
   getTeamAttendance: exports.getTeamAttendance,
   getAttendanceReport: exports.getAttendanceReport,
+  getAdminUserAttendance: exports.getAdminUserAttendance,
 };

@@ -24,6 +24,14 @@ router.post(
 // Get current user's attendance
 router.get("/my", auth, attendanceController.getUserAttendance);
 
+// Get any user's attendance (admin only)
+router.get(
+  "/admin-view",
+  auth,
+  authorize("admin"),
+  attendanceController.getAdminUserAttendance
+);
+
 // Get today's attendance for current user
 router.get("/today", auth, attendanceController.getTodayAttendance);
 

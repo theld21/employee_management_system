@@ -51,34 +51,60 @@ const navItems: NavItem[] = [
   },
 ];
 
-const adminItems: NavItem[] = [
-  {
-    icon: <ListIcon />,
-    name: "Quản lý biên bản",
-    path: "/admin/contracts",
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Quản lý thiết bị",
-    subItems: [
-      { name: "Danh sách thiết bị", path: "/admin/devices" },
-      { name: "Loại thiết bị", path: "/admin/device-types" },
-    ],
-  },
-  {
-    icon: <GroupIcon />,
-    name: "Quản lý tài khoản",
-    subItems: [
-      { name: "Quản lý tài khoản", path: "/admin/accounts" },
-      { name: "Quản lý nhóm", path: "/admin/groups" },
-    ],
-  },
-  {
-    icon: <FileIcon />,
-    name: "Báo cáo",
-    path: "/admin/reports",
-  },
-];
+// Get filtered nav items based on user role
+const getFilteredNavItems = (userRole: string | undefined): NavItem[] => {
+  if (userRole === 'admin') {
+    return [
+      {
+        icon: <HomeIcon />,
+        name: "Trang chủ",
+        path: "/",
+      },
+      {
+        icon: <CalenderIcon />,
+        name: "Chấm công",
+        path: "/calendar",
+      },
+      {
+        icon: <PaperPlaneIcon />,
+        name: "Yêu cầu",
+        subItems: [
+          { name: "Yêu cầu cần duyệt", path: "/confirm-requests" },
+        ],
+      },
+      {
+        icon: <FileIcon />,
+        name: "Biên bản",
+        subItems: [
+          { name: "Quản lý biên bản", path: "/admin/contracts" },
+        ],
+      },
+      {
+        icon: <PlugInIcon />,
+        name: "Thiết bị",
+        subItems: [
+          { name: "Danh sách thiết bị", path: "/admin/devices" },
+          { name: "Loại thiết bị", path: "/admin/device-types" },
+        ],
+      },
+      {
+        icon: <GroupIcon />,
+        name: "Tài khoản",
+        subItems: [
+          { name: "Quản lý tài khoản", path: "/admin/accounts" },
+          { name: "Quản lý nhóm", path: "/admin/groups" },
+        ],
+      },
+      {
+        icon: <FileIcon />,
+        name: "Báo cáo",
+        path: "/admin/reports",
+      },
+    ];
+  }
+
+  return navItems;
+};
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -217,7 +243,7 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main", "admin"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : adminItems;
+      const items = navItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -305,26 +331,8 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(getFilteredNavItems(user?.role), "main")}
             </div>
-
-            {user?.role === "admin" && (
-              <div className="">
-                <h2
-                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                    }`}
-                >
-                  {isExpanded || isHovered || isMobileOpen ? (
-                    "Admin"
-                  ) : (
-                    <HorizontaLDots />
-                  )}
-                </h2>
-                {renderMenuItems(adminItems, "admin")}
-              </div>
-            )}
           </div>
         </nav>
       </div>

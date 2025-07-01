@@ -60,12 +60,21 @@ interface CalendarEventData {
   };
 }
 
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
 const formatTimeFromHourMinute = (hour: number, minute: number): string => {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 };
 
 const AttendanceCalendar = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
@@ -75,6 +84,11 @@ const AttendanceCalendar = () => {
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [leaveMap, setLeaveMap] = useState<Map<string, number>>(new Map());
+
+  // Admin user selection state
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const formatTime = useCallback((timeString?: string): string => {
     if (!timeString) return 'N/A';
@@ -109,7 +123,14 @@ const AttendanceCalendar = () => {
         endDate: info.endStr,
       });
 
-      const response = await api.get(`/attendance/my?${params}`);
+      // For admin, add userId parameter if a user is selected
+      let apiEndpoint = '/attendance/my';
+      if (user?.role === 'admin' && selectedUserId) {
+        params.append('userId', selectedUserId);
+        apiEndpoint = '/attendance/admin-view';
+      }
+
+      const response = await api.get(`${apiEndpoint}?${params}`);
 
       if (!response.data) {
         failureCallback(new Error('Failed to fetch attendance data'));
@@ -246,7 +267,7 @@ const AttendanceCalendar = () => {
       console.error('Error fetching attendance data:', error);
       failureCallback(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [token, formatDate, getLeaveEventColor]);
+  }, [token, formatDate, getLeaveEventColor, user?.role, selectedUserId]);
 
   const renderEventContent = useCallback((eventInfo: EventContentArg) => {
     const { extendedProps } = eventInfo.event;
@@ -335,6 +356,39 @@ const AttendanceCalendar = () => {
     }
   };
 
+  // Fetch all users for admin
+  const fetchUsers = useCallback(async () => {
+    if (!token || user?.role !== 'admin') return;
+
+    setUsersLoading(true);
+    try {
+      const response = await api.get('/groups/users');
+      setUsers(response.data || []);
+      // Set current user as default if not admin
+      if (response.data && response.data.length > 0) {
+        setSelectedUserId(response.data[0]._id);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [token, user?.role]);
+
+  // Initialize admin features
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [user?.role, fetchUsers]);
+
+  // Refetch calendar data when selected user changes (for admin)
+  useEffect(() => {
+    if (user?.role === 'admin' && selectedUserId && calendarRef.current) {
+      calendarRef.current.getApi().refetchEvents();
+    }
+  }, [selectedUserId, user?.role]);
+
   const hasCheckedIn = todayAttendance && todayAttendance.checkIn;
   const hasCheckedOut = todayAttendance && todayAttendance.checkOut;
 
@@ -345,11 +399,38 @@ const AttendanceCalendar = () => {
   const todayLeaveValue = leaveMap?.get ? (leaveMap.get(todayKey) ?? 0) : 0;
   const todayIsWorkDay = isWorkDay(todayDateObj);
 
+  const isAdmin = user?.role === 'admin';
+  const selectedUser = users.find(u => u._id === selectedUserId);
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch chấm công</h3>
+          <div className="flex items-center gap-4">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch chấm công</h3>
+
+            {/* Admin User Selector */}
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Nhân viên:
+                </label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  disabled={usersLoading}
+                  className="min-w-48 rounded-md border-gray-300 shadow-sm p-2 text-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">Chọn nhân viên</option>
+                  {users.map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName} ({user.username})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
 
           {loading ? (
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -357,46 +438,60 @@ const AttendanceCalendar = () => {
             <div className="text-sm text-red-500 dark:text-red-400">{error}</div>
           ) : (
             <div className="flex items-center gap-4">
-              {hasCheckedIn && (
-                <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    Check-in: {formatTime(todayAttendance?.checkIn)}
+              {/* Show selected user info for admin */}
+              {isAdmin && selectedUser && (
+                <div className="text-sm px-3 py-1 rounded-md bg-blue-100 dark:bg-blue-900">
+                  <span className="font-medium text-blue-700 dark:text-blue-300">
+                    Đang xem: {selectedUser.firstName} {selectedUser.lastName}
                   </span>
                 </div>
               )}
 
-              {hasCheckedOut && (
-                <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    Check-out: {formatTime(todayAttendance?.checkOut)}
-                  </span>
-                </div>
-              )}
+              {/* Check-in/out info and buttons - only for non-admin users */}
+              {!isAdmin && (
+                <>
+                  {hasCheckedIn && (
+                    <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        Check-in: {formatTime(todayAttendance?.checkIn)}
+                      </span>
+                    </div>
+                  )}
 
-              {(!hasCheckedIn && todayLeaveValue !== 1 && todayIsWorkDay) && (
-                <button
-                  onClick={handleCheckIn}
-                  disabled={checkInLoading}
-                  className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white"
-                >
-                  {checkInLoading ? "Đang điểm danh..." : "Điểm danh"}
-                </button>
-              )}
+                  {hasCheckedOut && (
+                    <div className="text-sm px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        Check-out: {formatTime(todayAttendance?.checkOut)}
+                      </span>
+                    </div>
+                  )}
 
-              {(hasCheckedIn && !hasCheckedOut && todayLeaveValue !== 1 && todayIsWorkDay) && (
-                <button
-                  onClick={handleCheckOut}
-                  disabled={checkOutLoading}
-                  className="rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
-                >
-                  {checkOutLoading ? "Đang kết thúc..." : "Kết thúc"}
-                </button>
-              )}
+                  {(!hasCheckedIn && todayLeaveValue !== 1 && todayIsWorkDay) && (
+                    <button
+                      onClick={handleCheckIn}
+                      disabled={checkInLoading}
+                      className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white"
+                    >
+                      {checkInLoading ? "Đang điểm danh..." : "Điểm danh"}
+                    </button>
+                  )}
 
-              {actionError && (
-                <div className="text-sm text-red-500 dark:text-red-400">
-                  {actionError}
-                </div>
+                  {(hasCheckedIn && !hasCheckedOut && todayLeaveValue !== 1 && todayIsWorkDay) && (
+                    <button
+                      onClick={handleCheckOut}
+                      disabled={checkOutLoading}
+                      className="rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
+                    >
+                      {checkOutLoading ? "Đang kết thúc..." : "Kết thúc"}
+                    </button>
+                  )}
+
+                  {actionError && (
+                    <div className="text-sm text-red-500 dark:text-red-400">
+                      {actionError}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

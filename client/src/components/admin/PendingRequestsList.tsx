@@ -33,7 +33,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   const [pendingRequests, setPendingRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [managerType, setManagerType] = useState<'confirm' | 'approve' | null>(null);
+  const [managerType, setManagerType] = useState<'confirm' | 'approve' | 'admin' | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -194,6 +194,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   };
 
   const getActionButtonText = (request: Request) => {
+    // Admin có thể approve mọi request (pending hoặc confirmed)
+    if (managerType === 'admin') {
+      return 'Duyệt';
+    }
     // Nếu là manager confirm và request đang pending
     if (managerType === 'confirm' && request.status === 1) {
       return 'Xác nhận';
@@ -206,6 +210,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   };
 
   const canProcessRequest = (request: Request) => {
+    // Admin có thể xử lý mọi request đang pending hoặc confirmed
+    if (managerType === 'admin') {
+      return request.status === 1 || request.status === 2; // PENDING or CONFIRMED
+    }
     // Manager confirm chỉ có thể xử lý request pending
     if (managerType === 'confirm') {
       return request.status === 1; // PENDING
@@ -218,6 +226,10 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   };
 
   const getActionForRequest = (request: Request) => {
+    // Admin luôn approve (không cần confirm step)
+    if (managerType === 'admin') {
+      return 'approve';
+    }
     if (managerType === 'confirm' && request.status === 1) {
       return 'confirm';
     }
@@ -230,7 +242,7 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
   return (
     <div className="rounded-xl border border-stroke bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900/50">
       <h3 className="mb-5 text-xl font-semibold text-gray-900 dark:text-white">
-        {managerType === 'confirm' ? 'Yêu cầu chờ xác nhận' : 'Yêu cầu chờ duyệt'}
+        {managerType === 'confirm' ? 'Yêu cầu chờ xác nhận' : managerType === 'approve' ? 'Yêu cầu chờ duyệt' : 'Yêu cầu chờ xử lý'}
       </h3>
 
       {successMessage && (
@@ -555,23 +567,6 @@ const PendingRequestsList: React.FC<PendingRequestsListProps> = ({
                         {(selectedRequest.user.leaveDays ?? 0).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ngày
                       </div>
                     </div>
-
-                    {(selectedRequest.user.leaveDays ?? 0) < (selectedRequest.leaveDays ?? 0) && (
-                      <div className="col-span-2 p-4 bg-red-50 rounded-lg dark:bg-red-900/30">
-                        <div className="flex">
-                          <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-red-700 dark:text-red-300">
-                              Người dùng không còn đủ ngày phép để thực hiện yêu cầu này
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
               </div>
