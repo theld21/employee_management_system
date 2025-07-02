@@ -51,4 +51,12 @@ router.get(
   attendanceController.getAttendanceReport
 );
 
+// Get IP information for debugging (admin only)
+router.get(
+  "/ip-info",
+  auth,
+  authorize("admin"),
+  attendanceController.getIPInfo
+);
+
 module.exports = router;

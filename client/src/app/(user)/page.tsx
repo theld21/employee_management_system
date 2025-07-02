@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import HomeNewsClient from "@/components/news/HomeNewsClient";
 
 export const metadata: Metadata = {
-  title: "Tin tức | Dashboard",
-  description: "Trang tin tức nội bộ",
+  title: "WSM | Home",
+  description: "Trang chủ",
 };
 
 export default function HomeNewsPage() {

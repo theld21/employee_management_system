@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const Attendance = require("../models/Attendance");
 const Request = require("../models/Request");
+const { isIPAllowed, getClientIP } = require("../utils/ipUtils");
 
 /**
  * Hàm hỗ trợ để lấy ngày bắt đầu và kết thúc của một ngày từ checkIn time
@@ -25,6 +26,20 @@ exports.checkIn = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Check IP restrictions
+    const ipCheck = isIPAllowed(req);
+    if (!ipCheck.isAllowed) {
+      console.log(
+        `[CHECK-IN BLOCKED] User: ${req.user.id}, IP: ${ipCheck.clientIP}, Reason: ${ipCheck.reason}`
+      );
+      return res.status(403).json({
+        message: "Không thể chấm công từ vị trí này",
+        details: "Bạn chỉ có thể chấm công khi kết nối từ mạng công ty",
+        clientIP: ipCheck.clientIP,
+        reason: ipCheck.reason,
+      });
+    }
+
     const userId = req.user.id;
     const now = new Date();
     const { startOfDay, endOfDay } = getDayBoundaries(now);
@@ -42,13 +57,21 @@ exports.checkIn = async (req, res) => {
       return res.status(400).json({ message: "Bạn đã điểm danh hôm nay" });
     }
 
-    // Create new attendance record
+    // Create new attendance record with IP info
     const newAttendance = new Attendance({
       user: userId,
       checkIn: now,
     });
 
     await newAttendance.save();
+
+    // Log successful check-in with IP info
+    console.log(
+      `[CHECK-IN SUCCESS] User: ${req.user.id}, IP: ${
+        ipCheck.clientIP
+      }, Time: ${now.toISOString()}`
+    );
+
     res.status(201).json(newAttendance);
   } catch (error) {
     console.error(error);
@@ -62,6 +85,20 @@ exports.checkOut = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Check IP restrictions
+    const ipCheck = isIPAllowed(req);
+    if (!ipCheck.isAllowed) {
+      console.log(
+        `[CHECK-OUT BLOCKED] User: ${req.user.id}, IP: ${ipCheck.clientIP}, Reason: ${ipCheck.reason}`
+      );
+      return res.status(403).json({
+        message: "Không thể chấm công từ vị trí này",
+        details: "Bạn chỉ có thể chấm công khi kết nối từ mạng công ty",
+        clientIP: ipCheck.clientIP,
+        reason: ipCheck.reason,
+      });
     }
 
     const userId = req.user.id;
@@ -88,6 +125,14 @@ exports.checkOut = async (req, res) => {
     // Update checkout time
     attendance.checkOut = now;
     await attendance.save();
+
+    // Log successful check-out with IP info
+    console.log(
+      `[CHECK-OUT SUCCESS] User: ${req.user.id}, IP: ${
+        ipCheck.clientIP
+      }, Time: ${now.toISOString()}`
+    );
+
     res.json(attendance);
   } catch (error) {
     console.error(error);
@@ -689,6 +734,35 @@ exports.getAttendanceReport = async (req, res) => {
   }
 };
 
+// Get IP information for debugging (admin only)
+exports.getIPInfo = async (req, res) => {
+  try {
+    // Verify the user is admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền truy cập" });
+    }
+
+    const ipCheck = isIPAllowed(req);
+    const serverIPs = require("../utils/ipUtils").getServerIPs();
+    const ipConfig = require("../config/ipConfig");
+
+    res.json({
+      clientIP: ipCheck.clientIP,
+      serverIPs: serverIPs,
+      ipRestrictionEnabled: ipConfig.ENABLE_IP_RESTRICTION,
+      isAllowed: ipCheck.isAllowed,
+      reason: ipCheck.reason,
+      allowedIPs: ipConfig.ALLOWED_IPS,
+      allowedSubnets: ipConfig.ALLOWED_SUBNETS,
+      devMode: ipConfig.DEV_MODE,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  } catch (error) {
+    console.error("Error getting IP info:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+};
+
 module.exports = {
   checkIn: exports.checkIn,
   checkOut: exports.checkOut,
@@ -697,4 +771,5 @@ module.exports = {
   getTeamAttendance: exports.getTeamAttendance,
   getAttendanceReport: exports.getAttendanceReport,
   getAdminUserAttendance: exports.getAdminUserAttendance,
+  getIPInfo: exports.getIPInfo,
 };

@@ -83,6 +83,7 @@ const AttendanceCalendar = () => {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [ipError, setIpError] = useState<{ message: string, details?: string, clientIP?: string } | null>(null);
   const [leaveMap, setLeaveMap] = useState<Map<string, number>>(new Map());
 
   // Admin user selection state
@@ -325,6 +326,7 @@ const AttendanceCalendar = () => {
   const handleCheckIn = async () => {
     setCheckInLoading(true);
     setActionError(null);
+    setIpError(null);
     try {
       const response = await api.post("/attendance/check-in");
       setTodayAttendance(response.data);
@@ -332,8 +334,28 @@ const AttendanceCalendar = () => {
         calendarRef.current.getApi().refetchEvents();
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setActionError(error.response?.data?.message || "Failed to check in");
+      const error = err as {
+        response?: {
+          data?: {
+            message?: string,
+            details?: string,
+            clientIP?: string,
+            reason?: string
+          },
+          status?: number
+        }
+      };
+
+      // Handle IP restriction errors specifically
+      if (error.response?.status === 403 && error.response?.data?.clientIP) {
+        setIpError({
+          message: error.response.data.message || "Lỗi IP",
+          details: error.response.data.details,
+          clientIP: error.response.data.clientIP
+        });
+      } else {
+        setActionError(error.response?.data?.message || "Failed to check in");
+      }
     } finally {
       setCheckInLoading(false);
     }
@@ -342,6 +364,7 @@ const AttendanceCalendar = () => {
   const handleCheckOut = async () => {
     setCheckOutLoading(true);
     setActionError(null);
+    setIpError(null);
     try {
       const response = await api.post("/attendance/check-out");
       setTodayAttendance(response.data);
@@ -349,8 +372,28 @@ const AttendanceCalendar = () => {
         calendarRef.current.getApi().refetchEvents();
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setActionError(error.response?.data?.message || "Failed to check out");
+      const error = err as {
+        response?: {
+          data?: {
+            message?: string,
+            details?: string,
+            clientIP?: string,
+            reason?: string
+          },
+          status?: number
+        }
+      };
+
+      // Handle IP restriction errors specifically
+      if (error.response?.status === 403 && error.response?.data?.clientIP) {
+        setIpError({
+          message: error.response.data.message || "Lỗi IP",
+          details: error.response.data.details,
+          clientIP: error.response.data.clientIP
+        });
+      } else {
+        setActionError(error.response?.data?.message || "Failed to check out");
+      }
     } finally {
       setCheckOutLoading(false);
     }
@@ -485,17 +528,51 @@ const AttendanceCalendar = () => {
                       {checkOutLoading ? "Đang kết thúc..." : "Kết thúc"}
                     </button>
                   )}
-
-                  {actionError && (
-                    <div className="text-sm text-red-500 dark:text-red-400">
-                      {actionError}
-                    </div>
-                  )}
                 </>
               )}
             </div>
           )}
         </div>
+
+        {/* IP Error Display */}
+        {ipError && (
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  {ipError.message}
+                </h3>
+                {ipError.details && (
+                  <div className="mt-1 text-sm text-red-700 dark:text-red-300">
+                    {ipError.details}
+                  </div>
+                )}
+                {ipError.clientIP && (
+                  <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    IP hiện tại: {ipError.clientIP}
+                  </div>
+                )}
+                <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                  Vui lòng liên hệ quản trị viên nếu bạn đang ở trong mạng công ty.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Regular Action Error Display */}
+        {actionError && !ipError && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md">
+            <div className="text-sm text-red-700 dark:text-red-300">
+              {actionError}
+            </div>
+          </div>
+        )}
 
         <div className="attendance-calendar">
           <FullCalendar
