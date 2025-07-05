@@ -1,14 +1,14 @@
-import { Outfit } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import './globals.css';
 import { Metadata } from "next";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
-
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 
-const outfit = Outfit({
-  subsets: ["latin"],
+const roboto = Roboto({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '500', '700'],
 });
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <link
           rel="stylesheet"
@@ -32,7 +32,7 @@ export default function RootLayout({
           referrerPolicy="no-referrer"
         />
       </head>
-      <body className={`${outfit.className} dark:bg-gray-900`}>
+      <body className={`${roboto.className} dark:bg-gray-900`}>
         <AuthProvider>
           <ThemeProvider>
             <SidebarProvider>{children}</SidebarProvider>

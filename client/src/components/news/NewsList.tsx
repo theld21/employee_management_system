@@ -241,11 +241,11 @@ const NewsList: React.FC = () => {
         </>
       )}
       {/* Modal chi tiết bài viết */}
-      <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} className="max-w-2xl p-6 dark:bg-gray-900 dark:text-white">
+      <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} className="max-w-[80vw] p-6 dark:bg-gray-900 dark:text-white">
         {selectedNews && <NewsDetailModal news={selectedNews} />}
       </Modal>
       {/* Modal chỉnh sửa bài viết */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} className="max-w-[1400px] p-6 dark:bg-gray-900 dark:text-white">
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} className="max-w-[80vw] p-6 dark:bg-gray-900 dark:text-white">
         {selectedNews && (
           <EditNewsModal
             isOpen={showEditModal}
