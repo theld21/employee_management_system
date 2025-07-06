@@ -134,11 +134,11 @@ export const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
               >
                 <option value="">Chọn loại thiết bị</option>
-                                 {Array.isArray(deviceTypes) && deviceTypes.map((type) => (
-                   <option key={type._id} value={type.code}>
-                     {type.name} ({type.code})
-                   </option>
-                 ))}
+                {Array.isArray(deviceTypes) && deviceTypes.map((type) => (
+                  <option key={type._id} value={type.code}>
+                    {type.name} ({type.code})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

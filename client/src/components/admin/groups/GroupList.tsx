@@ -51,7 +51,7 @@ export const GroupList: React.FC = () => {
     try {
       const response = await api.get(`/groups?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sort=${sortField}&direction=${sortDirection}`);
       const data = response.data;
-      
+
       if (data && typeof data === 'object' && 'groups' in data && 'pagination' in data) {
         setGroups(data.groups);
         setTotalItems(data.pagination.total);
@@ -78,7 +78,7 @@ export const GroupList: React.FC = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setSearchQuery(value);
-    
+
     // Debounce search
     const timeoutId = setTimeout(() => {
       setCurrentPage(1);
@@ -107,7 +107,7 @@ export const GroupList: React.FC = () => {
       await api.delete(`/groups/${id}`);
       setSuccessMessage('Group deleted successfully');
       fetchGroups(currentPage, pageSize, searchQuery);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
@@ -121,7 +121,7 @@ export const GroupList: React.FC = () => {
   const handleGroupUpdate = () => {
     // Refresh the groups list when a group is updated
     fetchGroups(currentPage, pageSize, searchQuery);
-    
+
     // Also refresh the selected group if it's open
     if (selectedGroup) {
       // Find the updated group in the new list and update the selected group
@@ -137,7 +137,7 @@ export const GroupList: React.FC = () => {
   };
 
   const getStatusColor = (isActive: boolean) => {
-    return isActive 
+    return isActive
       ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
       : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
   };
@@ -191,7 +191,7 @@ export const GroupList: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => handleSort('name')}
               >
@@ -205,9 +205,6 @@ export const GroupList: React.FC = () => {
                 </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Mô tả
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Quản lý
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -219,7 +216,7 @@ export const GroupList: React.FC = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Trạng thái
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => handleSort('createdAt')}
               >
@@ -242,9 +239,6 @@ export const GroupList: React.FC = () => {
               <tr key={group._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">
                   {group.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                  {group.description || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                   {group.manager ? `${group.manager.firstName} ${group.manager.lastName}` : '-'}
@@ -339,11 +333,11 @@ export const GroupList: React.FC = () => {
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
-          
+
           <span className="mx-2 inline-flex text-sm font-medium text-gray-700 dark:text-gray-300">
             Trang {currentPage} của {totalPages}
           </span>
-          
+
           <button
             onClick={() => {
               if (currentPage < totalPages) {

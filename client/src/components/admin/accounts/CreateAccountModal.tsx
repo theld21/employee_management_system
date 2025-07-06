@@ -48,7 +48,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
     defaultValues: {
       username: '',
@@ -79,7 +79,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const handleFormSubmit: SubmitHandler<FormValues> = async (data) => {
     setSaving(true);
     setError(null);
-    
+
     try {
       // Ensure all required fields are present
       const payload = {
@@ -100,16 +100,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       };
 
       console.log('Sending payload:', payload);
-      
+
       const response = await api.post('/admin/accounts', payload);
       console.log('Response:', response);
-      
+
       reset();
       onSuccess();
       onClose();
     } catch (err) {
       console.error('Error creating account:', err);
-      
+
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<ApiError>;
         const errorMessage = axiosError.response?.data?.message || axiosError.response?.data?.error || 'Failed to create account';
@@ -141,7 +141,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </svg>
           </button>
         </div>
-        
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/50 dark:border-red-800">
             <div className="flex">
@@ -166,7 +166,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <input
                 id="username"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('username', { 
+                {...register('username', {
                   required: 'Tên đăng nhập là bắt buộc',
                   minLength: {
                     value: 3,
@@ -187,7 +187,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 id="email"
                 type="email"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('email', { 
+                {...register('email', {
                   required: 'Email là bắt buộc',
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -208,7 +208,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 id="password"
                 type="password"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('password', { 
+                {...register('password', {
                   required: 'Mật khẩu là bắt buộc',
                   minLength: {
                     value: 6,
@@ -239,7 +239,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <input
                 id="firstName"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('firstName', { 
+                {...register('firstName', {
                   required: 'Tên là bắt buộc',
                   minLength: {
                     value: 2,
@@ -259,7 +259,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <input
                 id="lastName"
                 className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
-                {...register('lastName', { 
+                {...register('lastName', {
                   required: 'Họ là bắt buộc',
                   minLength: {
                     value: 2,
@@ -367,7 +367,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
 
           <div className="mt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Thông tin địa chỉ</h3>
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Địa chỉ
@@ -382,14 +381,14 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
             >
               Hủy
             </button>
-            <button 
+            <button
               type="submit"
               disabled={saving}
               className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 border border-transparent rounded-md shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"

@@ -364,7 +364,6 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           </div>
 
           <div className="mt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Thông tin địa chỉ</h3>
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Địa chỉ

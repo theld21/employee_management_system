@@ -131,12 +131,12 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     >
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Group</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Thêm nhóm</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
           >
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Đóng</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -161,7 +161,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Group Name
+              Tên nhóm
             </label>
             <input
               type="text"
@@ -172,13 +172,13 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               required
               disabled={loading}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-              placeholder="Enter group name"
+              placeholder="Nhập tên nhóm"
             />
           </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description
+              Mô tả
             </label>
             <textarea
               id="description"
@@ -188,13 +188,13 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               disabled={loading}
               rows={3}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
-              placeholder="Enter group description"
+              placeholder="Nhập mô tả"
             />
           </div>
 
           <div>
             <label htmlFor="managerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Manager
+              Quản lý
             </label>
             <select
               id="managerId"
@@ -204,7 +204,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               disabled={loading}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
             >
-              <option value="">Select a manager (optional)</option>
+              <option value="">Chọn quản lý (tùy chọn)</option>
               {managers.map((manager) => (
                 <option key={manager._id} value={manager._id}>
                   {manager.firstName} {manager.lastName} ({manager.username})
@@ -215,7 +215,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
           <div>
             <label htmlFor="parentGroupId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Parent Group
+              Nhóm cha
             </label>
             <select
               id="parentGroupId"
@@ -225,7 +225,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               disabled={loading}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
             >
-              <option value="">No parent group</option>
+              <option value="">Không có nhóm cha</option>
               {groups.map((group) => (
                 <option key={group._id} value={group._id}>
                   {group.name}
@@ -236,7 +236,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
           <div>
             <label htmlFor="handleRequestType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Request Handling Permission
+              Quyền xử lý yêu cầu
             </label>
             <select
               id="handleRequestType"
@@ -246,22 +246,22 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               disabled={loading}
               className="block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm disabled:opacity-50"
             >
-              <option value="">Select permission type (optional)</option>
-              <option value="confirm">Can Confirm Requests</option>
-              <option value="approve">Can Approve Requests</option>
+              <option value="">Chọn loại quyền (tùy chọn)</option>
+              <option value="confirm">Có thể xác nhận yêu cầu</option>
+              <option value="approve">Có thể phê duyệt yêu cầu</option>
             </select>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={onClose}
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 disabled:opacity-50"
             >
-              Cancel
+              Hủy
             </button>
-            <button 
+            <button
               type="submit"
               disabled={loading || !formData.name.trim()}
               className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-brand-500 border border-transparent rounded-md shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
@@ -272,10 +272,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Creating...
+                  Đang thêm...
                 </>
               ) : (
-                'Create Group'
+                'Thêm nhóm'
               )}
             </button>
           </div>
